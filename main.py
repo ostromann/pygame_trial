@@ -19,35 +19,49 @@ BULLET_HIT_SOUND = pygame.mixer.Sound(os.path.join('Assets', 'Grenade+1.mp3'))
 BULLET_FIRE_SOUND = pygame.mixer.Sound(
     os.path.join('Assets', 'Gun+Silencer.mp3'))
 
-HEALTH_FONT = pygame.font.SysFont('consolas', 40)
-WINNER_FONT = pygame.font.SysFont('consolas', 100)
+HEALTH_FONT = pygame.font.SysFont('impact', 40)
+WINNER_FONT = pygame.font.SysFont('impact', 100)
 
 FPS = 60
 VEL = 5
 BULLET_VEL = 10
-MAX_BULLETS = 3
+MAX_BULLETS = 7
+MAX_HEALTH = 3
 
-SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 55, 40
+
+SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 40, 55
 
 YELLOW_HIT = pygame.USEREVENT + 1
 RED_HIT = pygame.USEREVENT + 2
 
 YELLOW_SPACESHIP_IMAGE = pygame.image.load(
     os.path.join('Assets', 'spaceship_yellow.png'))
-YELLOW_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(
-    YELLOW_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 90)
+YELLOW_SPACESHIP = pygame.transform.scale(
+    YELLOW_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT))
 
 RED_SPACESHIP_IMAGE = pygame.image.load(
     os.path.join('Assets', 'spaceship_red.png'))
 RED_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(
-    RED_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 270)
+    RED_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 180)
 
 SPACE = pygame.transform.scale(pygame.image.load(
     os.path.join('Assets', 'space.png')), (WIDTH, HEIGHT))
 
+SHIELD_WIDTH, SHIELD_HEIGHT = 10, 10
 
-def draw_window(red, yellow, red_bullets, yellow_bullets, red_health, yellow_health):
-    #    WIN.fill(SPACE)
+YELLOW_SHIELD = pygame.transform.scale(pygame.image.load(
+    os.path.join('Assets', 'shield_yellow.png')), (SHIELD_WIDTH, SHIELD_HEIGHT))
+RED_SHIELD = pygame.transform.scale(pygame.image.load(
+    os.path.join('Assets', 'shield_red.png')), (SHIELD_WIDTH, SHIELD_HEIGHT))
+
+EXPLOSION_WIDTH, EXPLOSION_HEIGHT = 70, 70
+EXPLOSION = pygame.transform.scale(pygame.image.load(os.path.join(
+    'Assets', 'explosion.png')), (EXPLOSION_WIDTH, EXPLOSION_HEIGHT))
+
+EXPLOSION_TIMEOUT = 5
+
+
+def draw_window(red, yellow, red_bullets, yellow_bullets, red_health, yellow_health, red_explosion, yellow_explosion):
     WIN.blit(SPACE, (0, 0))
     pygame.draw.rect(WIN, BLACK, BORDER)
 
@@ -61,21 +75,52 @@ def draw_window(red, yellow, red_bullets, yellow_bullets, red_health, yellow_hea
     WIN.blit(YELLOW_SPACESHIP, (yellow.x, yellow.y))
     WIN.blit(RED_SPACESHIP, (red.x, red.y))
 
+    # Render flying bullets
     for bullet in red_bullets:
         pygame.draw.rect(WIN, RED, bullet)
     for bullet in yellow_bullets:
         pygame.draw.rect(WIN, YELLOW, bullet)
+
+    # Render available bullets
+    for pos, slot in enumerate(range(MAX_BULLETS - len(red_bullets))):
+        slot_width = red.width//MAX_BULLETS-2
+        slot_height = 10
+        pygame.draw.rect(WIN, RED, pygame.Rect(
+            red.x + (slot_width + 2)*pos, red.y-slot_height, slot_width, slot_height))
+
+    for pos, slot in enumerate(range(MAX_BULLETS - len(yellow_bullets))):
+        slot_width = yellow.width//MAX_BULLETS-2
+        slot_height = 10
+        pygame.draw.rect(WIN, YELLOW, pygame.Rect(
+            yellow.x + (slot_width + 2)*pos, yellow.y-slot_height, slot_width, slot_height))
+
+    # Render shields
+    for pos, slot in enumerate(range(red_health)):
+        WIN.blit(RED_SHIELD, (red.x + 10*pos, red.y + red.height))
+
+    for pos, slot in enumerate(range(yellow_health)):
+        WIN.blit(YELLOW_SHIELD, (yellow.x + 10*pos, yellow.y + yellow.height))
+
+    # Render explosion
+    if red_explosion:
+        WIN.blit(EXPLOSION, (red.x + red.width//2 - EXPLOSION_WIDTH //
+                 2, red.y + red.height//2 - EXPLOSION_HEIGHT//2))
+
+    if yellow_explosion:
+        WIN.blit(EXPLOSION, (yellow.x + yellow.width//2 - EXPLOSION_WIDTH //
+                 2, yellow.y + yellow.height//2 - EXPLOSION_HEIGHT//2))
+
     pygame.display.update()
 
 
 def handle_yellow_movement(keys_pressed, yellow):
     if keys_pressed[pygame.K_a] and yellow.x - VEL > 0:  # LEFT
         yellow.x -= VEL
-    if keys_pressed[pygame.K_d] and yellow.x + yellow.height + VEL < BORDER.x:  # RIGHT
+    if keys_pressed[pygame.K_d] and yellow.x + yellow.width + VEL < BORDER.x:  # RIGHT
         yellow.x += VEL
     if keys_pressed[pygame.K_w] and yellow.y - VEL > 0:  # UP
         yellow.y -= VEL
-    if keys_pressed[pygame.K_s] and yellow.y + yellow.width + VEL < HEIGHT:  # DOWN
+    if keys_pressed[pygame.K_s] and yellow.y + yellow.height + VEL < HEIGHT:  # DOWN
         yellow.y += VEL
 
 
@@ -83,11 +128,11 @@ def handle_red_movement(keys_pressed, red):
     # LEFT
     if keys_pressed[pygame.K_LEFT] and red.x - VEL > (BORDER.x + BORDER_WIDTH):
         red.x -= VEL
-    if keys_pressed[pygame.K_RIGHT] and red.x + red.height + VEL < WIDTH:  # RIGHT
+    if keys_pressed[pygame.K_RIGHT] and red.x + red.width + VEL < WIDTH:  # RIGHT
         red.x += VEL
     if keys_pressed[pygame.K_UP] and red.y - VEL > 0:  # UP
         red.y -= VEL
-    if keys_pressed[pygame.K_DOWN] and red.y + VEL + red.width < HEIGHT:  # DOWN
+    if keys_pressed[pygame.K_DOWN] and red.y + VEL + red.height < HEIGHT:  # DOWN
         red.y += VEL
 
 
@@ -126,13 +171,20 @@ def main():
     red_bullets = []
     yellow_bullets = []
 
-    red_health = 10
-    yellow_health = 10
+    red_health = MAX_HEALTH
+    yellow_health = MAX_HEALTH
+
+    red_explosion = 0
+    yellow_explosion = 0
 
     clock = pygame.time.Clock()
     run = True
     while run:
         clock.tick(FPS)
+
+        red_explosion = red_explosion - 1 if red_explosion > 0 else 0
+        yellow_explosion = yellow_explosion - 1 if yellow_explosion > 0 else 0
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -152,10 +204,12 @@ def main():
 
             if event.type == RED_HIT:
                 red_health -= 1
+                red_explosion = EXPLOSION_TIMEOUT
                 BULLET_HIT_SOUND.play()
 
             if event.type == YELLOW_HIT:
                 yellow_health -= 1
+                yellow_explosion = EXPLOSION_TIMEOUT
                 BULLET_HIT_SOUND.play()
 
         winner_text = ""
@@ -165,10 +219,11 @@ def main():
             winner_text = "Red wins!"
 
         if winner_text != "":
+            draw_window(red, yellow, red_bullets, yellow_bullets,
+                        red_health, yellow_health, red_explosion, yellow_explosion)
             draw_winner(winner_text)
             break
 
-        print(red_bullets, yellow_bullets)
         keys_pressed = pygame.key.get_pressed()
         handle_yellow_movement(keys_pressed, yellow)
         handle_red_movement(keys_pressed, red)
@@ -177,7 +232,7 @@ def main():
                        red)
 
         draw_window(red, yellow, red_bullets, yellow_bullets,
-                    red_health, yellow_health)
+                    red_health, yellow_health, red_explosion > 0, yellow_explosion > 0)
 
     main()
 
