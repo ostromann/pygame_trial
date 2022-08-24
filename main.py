@@ -1,5 +1,8 @@
+from cmath import isnan
 import pygame
 import os
+import numpy as np
+
 pygame.font.init()
 pygame.mixer.init()
 
@@ -132,7 +135,10 @@ class Spaceship(pygame.Rect):
         self.width = width
         self.height = height
         self.color = color
-        self.vel = 5  # (0,0)
+        self.vel = np.array([0.0, 0.0])
+        self.max_vel = 20  # px/frame
+        self.acc = 2.0  # px/frame^2
+        self.friction = 0.8  # px/frame^2
         self.max_health = 5
         self.health = self.max_health
         self.max_bullets = 3
@@ -145,15 +151,62 @@ class Spaceship(pygame.Rect):
         self.key_shoot = key_shoot
         self.hit_event = hit_event
 
+    def handle_acceleration(self, keys_pressed):
+        acc_direction = np.array([0.0, 0.0])
+
+        if keys_pressed[self.key_left]:  # LEFT
+            print('LEFT')
+            acc_direction[0] -= 1.0
+        if keys_pressed[self.key_right]:  # RIGHT
+            print('RIGHT')
+            acc_direction[0] += 1.0
+        if keys_pressed[self.key_up]:  # UP
+            print('UP')
+            acc_direction[1] -= 1.0
+        if keys_pressed[self.key_down]:  # DOWN
+            print('DOWN')
+            acc_direction[1] += 1.0
+
+        # if no key pressed, apply friction
+        if acc_direction[0] == 0.0 and acc_direction[1] == 0.0:
+            self.vel = np.array([0.0, 0.0]) if np.linalg.norm(
+                self.vel) < 0.01 else self.vel * self.friction
+
+        # apply acceleration
+        else:
+            # normalize acceleration to unit vector
+            acc_direction = acc_direction / np.linalg.norm(acc_direction)
+            acc_direction = np.where(np.isnan(acc_direction), 0, acc_direction)
+
+            self.vel += acc_direction * self.acc
+
+        # limit velocity
+        if np.linalg.norm(self.vel) > self.max_vel:
+            print('reached max vel')
+            v_hat = self.vel / np.linalg.norm(self.vel)
+            print('unit vector', v_hat)
+            self.vel = v_hat * self.max_vel
+            print('limited', self.vel)
+
     def handle_movement(self, keys_pressed):
-        if keys_pressed[self.key_left] and self.x - self.vel > 0:  # LEFT
-            self.x -= self.vel
-        if keys_pressed[self.key_right] and self.x + self.width + self.vel < BORDER.x:  # RIGHT
-            self.x += self.vel
-        if keys_pressed[self.key_up] and self.y - self.vel > 0:  # UP
-            self.y -= self.vel
-        if keys_pressed[self.key_down] and self.y + self.height + self.vel < HEIGHT:  # DOWN
-            self.y += self.vel
+        self.handle_acceleration(keys_pressed)
+
+        self.x += self.vel[0]
+        self.y += self.vel[1]
+
+        # check bound collision
+        if self.x < 0:
+            self.x = 0
+            self.vel[0] = 0.0
+        if self.x + self.width > WIDTH:
+            self.x = WIDTH - self.width
+            self.vel[0] = 0.0
+        if self.y < 0:
+            self.y = 0
+            self.vel[1] = 0.0
+        if self.y + self.height > HEIGHT:
+            self.y = HEIGHT - self.height
+            self.vel[1] = 0.0
 
     def draw(self, win):
         # Render spaceship
@@ -181,21 +234,19 @@ class Spaceship(pygame.Rect):
                                       self.y + self.height))
 
 
-def draw_window(red, yellow,  bullets, explosions):
-    print(f'rendering {red}, {yellow}, {bullets}, {explosions}')
+def draw_window(spaceships,  bullets, explosions):
     WIN.blit(SPACE, (0, 0))
-    pygame.draw.rect(WIN, BLACK, BORDER)
+    # pygame.draw.rect(WIN, BLACK, BORDER)
 
-    red_health_text = HEALTH_FONT.render(
-        "Health: " + str(red.health), 1, WHITE)
-    yellow_health_text = HEALTH_FONT.render(
-        "Health: " + str(yellow.health), 1, WHITE)
-    WIN.blit(red_health_text, (WIDTH - red_health_text.get_width() - 10, 10))
-    WIN.blit(yellow_health_text, (10, 10))
+    # red_health_text = HEALTH_FONT.render(
+    #     "Health: " + str(red.health), 1, WHITE)
+    # yellow_health_text = HEALTH_FONT.render(
+    #     "Health: " + str(yellow.health), 1, WHITE)
+    # WIN.blit(red_health_text, (WIDTH - red_health_text.get_width() - 10, 10))
+    # WIN.blit(yellow_health_text, (10, 10))
 
-    # WIN.blit(YELLOW_SPACESHIP, (yellow.x, yellow.y))
-    yellow.draw(WIN)
-    red.draw(WIN)
+    for spaceship in spaceships:
+        spaceship.draw(WIN)
 
     for bullet in bullets:
         bullet.draw(WIN)
@@ -206,14 +257,6 @@ def draw_window(red, yellow,  bullets, explosions):
             explosions.remove(explosion)
 
     pygame.display.update()
-
-
-# def handle_yellow_acceleration(keys_pressed, yellow):
-#     # TODO: To keep track of acceleration, make spaceships to objects
-#     # Velocity as 2D vector
-#     # key press accelerates spaceship into some direction
-#     # Add some attenuation so the ships come to a stand still again
-#     pass
 
 
 def draw_winner(text):
@@ -234,16 +277,10 @@ def main():
     bullets = []
     explosions = []
 
-    red_explosion = 0
-    yellow_explosion = 0
-
     clock = pygame.time.Clock()
     run = True
     while run:
         clock.tick(FPS)
-
-        red_explosion = red_explosion - 1 if red_explosion > 0 else 0
-        yellow_explosion = yellow_explosion - 1 if yellow_explosion > 0 else 0
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -277,18 +314,19 @@ def main():
             winner_text = "Red wins!"
 
         if winner_text != "":
-            draw_window(red, yellow, bullets, explosions)
+            draw_window(spaceships, bullets, explosions)
             draw_winner(winner_text)
             break
 
         keys_pressed = pygame.key.get_pressed()
         yellow.handle_movement(keys_pressed)
         red.handle_movement(keys_pressed)
+        # red.handle_movement(keys_pressed)
 
         for bullet in bullets:
             bullet.handle_movement(spaceships, bullets)
 
-        draw_window(red, yellow, bullets, explosions)
+        draw_window(spaceships, bullets, explosions)
 
     main()
 
