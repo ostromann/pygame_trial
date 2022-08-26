@@ -2,6 +2,7 @@ from cmath import isnan
 import pygame
 import os
 import numpy as np
+import math
 
 pygame.font.init()
 pygame.mixer.init()
@@ -49,8 +50,12 @@ RED_SPACESHIP_IMAGE = pygame.image.load(
 RED_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(
     RED_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 180)
 
-SPACE = pygame.transform.scale(pygame.image.load(
-    os.path.join('Assets', 'space.png')), (WIDTH, HEIGHT))
+# SPACE = pygame.transform.scale(pygame.image.load(
+#     os.path.join('Assets', 'space.png')), (WIDTH, HEIGHT))
+
+# load background image
+SPACE = pygame.image.load(os.path.join(
+    'Assets', 'space_endless.png')).convert()
 
 SHIELD_WIDTH, SHIELD_HEIGHT = 10, 10
 
@@ -65,6 +70,40 @@ EXPLOSION = pygame.transform.scale(pygame.image.load(os.path.join(
 
 EXPLOSION_TIMEOUT = 5
 
+ASTEROID_WIDTH, ASTEROID_HEIGHT = 50, 50
+ASTEROID = pygame.transform.scale(pygame.image.load(os.path.join(
+    'Assets', 'asteroid.png')), (ASTEROID_WIDTH, ASTEROID_HEIGHT))
+
+
+class Ammo(pygame.Rect):
+    def __init__(self, x=WIDTH, y=0, width=70, height=70, vel=np.array([0.0, 0.0])):
+        print(y)
+        self.x = x
+        self.y = np.random.uniform(20, HEIGHT-20)
+        self.width = width
+        self.height = height
+        self.vel = np.array([-5.0, np.random.uniform(-2.0, 2.0)])
+
+
+class Asteroid(pygame.Rect):
+    def __init__(self, x=WIDTH, y=0, width=70, height=70, vel=np.array([0.0, 0.0])):
+        print(y)
+        self.x = x
+        self.y = np.random.uniform(20, HEIGHT-20)
+        self.width = width
+        self.height = height
+        self.vel = np.array([-5.0, np.random.uniform(-2.0, 2.0)])
+
+    def handle_movement(self, asteroids):
+        self.x += self.vel[0]
+        self.y += self.vel[1]
+
+        if self.x < 0:
+            asteroids.remove(self)
+
+    def draw(self, win):
+        win.blit(ASTEROID, (self.x, self.y))
+
 
 class Explosion(pygame.Rect):
     def __init__(self, x, y, width, height, duration):
@@ -78,7 +117,7 @@ class Explosion(pygame.Rect):
 
     def draw(self, win):
         if self.duration > 0:
-            WIN.blit(EXPLOSION, (self.x, self.y))
+            win.blit(EXPLOSION, (self.x, self.y))
             self.duration -= 1
             print(f'explosion rendered, duration: {self.duration}')
             return True
@@ -97,7 +136,7 @@ class Bullet(pygame.Rect):
 
         BULLET_FIRE_SOUND.play()
 
-    def handle_movement(self, spaceships, bullets):
+    def handle_movement(self, spaceships, bullets, asteroids, explosions):
         if self.color == YELLOW:
             self.x += BULLET_VEL
         elif self.color == RED:
@@ -106,13 +145,23 @@ class Bullet(pygame.Rect):
             raise ValueError
 
         for collision in self.collidelistall(spaceships):
-            print(id(self.owner))
-            print(collision, id(spaceships[collision]))
             if spaceships[collision] != self.owner:
                 self.owner.bullets.remove(self)
                 bullets.remove(self)
                 pygame.event.post(pygame.event.Event(
                     spaceships[collision].hit_event))
+
+        for collision in self.collidelistall(asteroids):
+            if asteroids[collision] != self.owner:
+                print(self.owner.bullets)
+                explosion = Explosion(asteroids[collision].x + asteroids[collision].width//2 - EXPLOSION_WIDTH//2, asteroids[collision].y + asteroids[collision].height //
+                                      2 - EXPLOSION_HEIGHT//2, EXPLOSION_WIDTH, EXPLOSION_HEIGHT, EXPLOSION_TIMEOUT)
+                asteroids.remove(asteroids[collision])
+                explosions.append(explosion)
+
+                self.owner.bullets.remove(self)
+                bullets.remove(self)
+                break
 
         if self.is_out_of_bounds():
             self.owner.bullets.remove(self)
@@ -137,8 +186,8 @@ class Spaceship(pygame.Rect):
         self.color = color
         self.vel = np.array([0.0, 0.0])
         self.max_vel = 20  # px/frame
-        self.acc = 2.0  # px/frame^2
-        self.friction = 0.8  # px/frame^2
+        self.acc = 0.8  # px/frame^2
+        self.friction = 0.9  # px/frame^2
         self.max_health = 5
         self.health = self.max_health
         self.max_bullets = 3
@@ -234,16 +283,32 @@ class Spaceship(pygame.Rect):
                                       self.y + self.height))
 
 
-def draw_window(spaceships,  bullets, explosions):
-    WIN.blit(SPACE, (0, 0))
-    # pygame.draw.rect(WIN, BLACK, BORDER)
+class Background():
+    def __init__(self, image,  scroll_speed):
+        self.image = image
+        self.tiles = math.ceil(WIDTH / self.image.get_width()) + 1
+        self.scroll_speed = scroll_speed
+        self.scroll = 0
 
-    # red_health_text = HEALTH_FONT.render(
-    #     "Health: " + str(red.health), 1, WHITE)
-    # yellow_health_text = HEALTH_FONT.render(
-    #     "Health: " + str(yellow.health), 1, WHITE)
-    # WIN.blit(red_health_text, (WIDTH - red_health_text.get_width() - 10, 10))
-    # WIN.blit(yellow_health_text, (10, 10))
+    def draw(self, win):
+        # draw scrolling background
+        for i in range(0, self.tiles):
+            WIN.blit(SPACE, (i * self.image.get_width() + self.scroll, 0))
+            # Debugging
+            # bg_rect.x = i * self.image.width + self.scroll
+            # pygame.draw.rect(screen, (255, 0, 0), bg_rect, 1)
+
+        # scroll background
+        self.scroll += self.scroll_speed
+
+        # reset scroll
+        if abs(self.scroll) > self.image.get_width():
+            self.scroll = 0
+
+
+def draw_window(background, spaceships,  bullets, explosions, asteroids):
+
+    background.draw(WIN)
 
     for spaceship in spaceships:
         spaceship.draw(WIN)
@@ -255,6 +320,9 @@ def draw_window(spaceships,  bullets, explosions):
         if not explosion.draw(WIN):
             print('explosion removed')
             explosions.remove(explosion)
+
+    for asteroid in asteroids:
+        asteroid.draw(WIN)
 
     pygame.display.update()
 
@@ -268,19 +336,21 @@ def draw_winner(text):
 
 
 def main():
-    red = Spaceship(700, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT, RED,
-                    pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RCTRL, RED_HIT)
+    background = Background(SPACE, -4)
     yellow = Spaceship(100, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT, YELLOW,
-                       pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_LCTRL, YELLOW_HIT)
+                       pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_SPACE, YELLOW_HIT)
 
-    spaceships = [yellow, red]
+    spaceships = [yellow]
     bullets = []
     explosions = []
+    asteroids = []
 
     clock = pygame.time.Clock()
     run = True
     while run:
         clock.tick(FPS)
+        if len(asteroids) < 5:
+            asteroids.append(Asteroid())
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -295,11 +365,11 @@ def main():
                         bullets.append(bullet)
                         spaceship.bullets.append(bullet)
 
-            if event.type == RED_HIT:
-                explosion = Explosion(red.x + red.width//2 - EXPLOSION_WIDTH//2, red.y + red.height //
-                                      2 - EXPLOSION_HEIGHT//2, EXPLOSION_WIDTH, EXPLOSION_HEIGHT, EXPLOSION_TIMEOUT)
-                explosions.append(explosion)
-                red.health -= 1
+            # if event.type == RED_HIT:
+            #     explosion = Explosion(red.x + red.width//2 - EXPLOSION_WIDTH//2, red.y + red.height //
+            #                           2 - EXPLOSION_HEIGHT//2, EXPLOSION_WIDTH, EXPLOSION_HEIGHT, EXPLOSION_TIMEOUT)
+            #     explosions.append(explosion)
+            #     red.health -= 1
 
             if event.type == YELLOW_HIT:
                 explosion = Explosion(yellow.x + yellow.width//2 - EXPLOSION_WIDTH//2, yellow.y + yellow.height //
@@ -308,25 +378,26 @@ def main():
                 yellow.health -= 1
 
         winner_text = ""
-        if red.health <= 0:
-            winner_text = "Yellow wins!"
         if yellow.health <= 0:
-            winner_text = "Red wins!"
+            winner_text = "Game Over!"
 
         if winner_text != "":
-            draw_window(spaceships, bullets, explosions)
+            draw_window(spaceships, bullets, explosions, asteroids)
             draw_winner(winner_text)
             break
 
         keys_pressed = pygame.key.get_pressed()
         yellow.handle_movement(keys_pressed)
-        red.handle_movement(keys_pressed)
+        # red.handle_movement(keys_pressed)
         # red.handle_movement(keys_pressed)
 
         for bullet in bullets:
-            bullet.handle_movement(spaceships, bullets)
+            bullet.handle_movement(spaceships, bullets, asteroids, explosions)
 
-        draw_window(spaceships, bullets, explosions)
+        for asteroid in asteroids:
+            asteroid.handle_movement(asteroids)
+
+        draw_window(background, spaceships, bullets, explosions, asteroids)
 
     main()
 
