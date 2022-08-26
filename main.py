@@ -57,6 +57,9 @@ RED_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(
 SPACE = pygame.image.load(os.path.join(
     'Assets', 'space_endless.png')).convert()
 
+STARS = pygame.image.load(os.path.join(
+    'Assets', 'stars_endless.png')).convert_alpha()
+
 SHIELD_WIDTH, SHIELD_HEIGHT = 10, 10
 
 YELLOW_SHIELD = pygame.transform.scale(pygame.image.load(
@@ -243,7 +246,7 @@ class Spaceship(pygame.Rect):
         self.x += self.vel[0]
         self.y += self.vel[1]
 
-        # check bound collision
+        # check boundary collision
         if self.x < 0:
             self.x = 0
             self.vel[0] = 0.0
@@ -256,6 +259,13 @@ class Spaceship(pygame.Rect):
         if self.y + self.height > HEIGHT:
             self.y = HEIGHT - self.height
             self.vel[1] = 0.0
+
+    def handle_collisions(self, asteroids):
+        for asteroid in asteroids:
+            print('checking collisions with', asteroid)
+            if self.colliderect(asteroid):
+                asteroids.remove(asteroid)
+                pygame.event.post(pygame.event.Event(YELLOW_HIT))
 
     def draw(self, win):
         # Render spaceship
@@ -293,7 +303,7 @@ class Background():
     def draw(self, win):
         # draw scrolling background
         for i in range(0, self.tiles):
-            WIN.blit(SPACE, (i * self.image.get_width() + self.scroll, 0))
+            WIN.blit(self.image, (i * self.image.get_width() + self.scroll, 0))
             # Debugging
             # bg_rect.x = i * self.image.width + self.scroll
             # pygame.draw.rect(screen, (255, 0, 0), bg_rect, 1)
@@ -306,9 +316,10 @@ class Background():
             self.scroll = 0
 
 
-def draw_window(background, spaceships,  bullets, explosions, asteroids):
+def draw_window(backgrounds, spaceships,  bullets, explosions, asteroids):
 
-    background.draw(WIN)
+    for background in backgrounds:
+        background.draw(WIN)
 
     for spaceship in spaceships:
         spaceship.draw(WIN)
@@ -336,10 +347,12 @@ def draw_winner(text):
 
 
 def main():
-    background = Background(SPACE, -4)
+    space_background = Background(SPACE, -1)
+    stars_background = Background(STARS, -2)
     yellow = Spaceship(100, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT, YELLOW,
                        pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_SPACE, YELLOW_HIT)
 
+    backgrounds = [space_background, stars_background]
     spaceships = [yellow]
     bullets = []
     explosions = []
@@ -382,14 +395,10 @@ def main():
             winner_text = "Game Over!"
 
         if winner_text != "":
-            draw_window(spaceships, bullets, explosions, asteroids)
+            draw_window(backgrounds, spaceships,
+                        bullets, explosions, asteroids)
             draw_winner(winner_text)
             break
-
-        keys_pressed = pygame.key.get_pressed()
-        yellow.handle_movement(keys_pressed)
-        # red.handle_movement(keys_pressed)
-        # red.handle_movement(keys_pressed)
 
         for bullet in bullets:
             bullet.handle_movement(spaceships, bullets, asteroids, explosions)
@@ -397,7 +406,11 @@ def main():
         for asteroid in asteroids:
             asteroid.handle_movement(asteroids)
 
-        draw_window(background, spaceships, bullets, explosions, asteroids)
+        keys_pressed = pygame.key.get_pressed()
+        yellow.handle_movement(keys_pressed)
+        yellow.handle_collisions(asteroids)
+
+        draw_window(backgrounds, spaceships, bullets, explosions, asteroids)
 
     main()
 
