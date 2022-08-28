@@ -79,23 +79,26 @@ ASTEROID = pygame.transform.scale(pygame.image.load(os.path.join(
 
 
 class Ammo(pygame.Rect):
-    def __init__(self, x=WIDTH, y=0, width=70, height=70, vel=np.array([0.0, 0.0])):
+    def __init__(self, x=WIDTH, y=0, width=30, height=30)):
         print(y)
-        self.x = x
-        self.y = np.random.uniform(20, HEIGHT-20)
-        self.width = width
-        self.height = height
-        self.vel = np.array([-5.0, np.random.uniform(-2.0, 2.0)])
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+
+    def draw(self, win):
+        pygame.draw.rect(win, (255, 0, 0), self)
 
 
 class Asteroid(pygame.Rect):
-    def __init__(self, x=WIDTH, y=0, width=70, height=70, vel=np.array([0.0, 0.0])):
+    def __init__(self, x = WIDTH, y = 0, width = 70, height = 70, vel = np.array([0.0, 0.0])):
         print(y)
-        self.x = x
-        self.y = np.random.uniform(20, HEIGHT-20)
-        self.width = width
-        self.height = height
-        self.vel = np.array([-5.0, np.random.uniform(-2.0, 2.0)])
+        self.x=x
+        self.y=np.random.uniform(20, HEIGHT-20)
+        self.width=width
+        self.height=height
+        self.vel=np.array([-5.0, np.random.uniform(-2.0, 2.0)])
+        self.drop_rate=0.5
 
     def handle_movement(self, asteroids):
         self.x += self.vel[0]
@@ -110,11 +113,11 @@ class Asteroid(pygame.Rect):
 
 class Explosion(pygame.Rect):
     def __init__(self, x, y, width, height, duration):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.duration = duration
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+        self.duration=duration
 
         BULLET_HIT_SOUND.play()
 
@@ -130,12 +133,12 @@ class Explosion(pygame.Rect):
 
 class Bullet(pygame.Rect):
     def __init__(self, x, y, width, height, color, owner):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.color = color
-        self.owner = owner  # owner is immune to damage from this Bullet
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+        self.color=color
+        self.owner=owner  # owner is immune to damage from this Bullet
 
         BULLET_FIRE_SOUND.play()
 
@@ -157,7 +160,7 @@ class Bullet(pygame.Rect):
         for collision in self.collidelistall(asteroids):
             if asteroids[collision] != self.owner:
                 print(self.owner.bullets)
-                explosion = Explosion(asteroids[collision].x + asteroids[collision].width//2 - EXPLOSION_WIDTH//2, asteroids[collision].y + asteroids[collision].height //
+                explosion=Explosion(asteroids[collision].x + asteroids[collision].width//2 - EXPLOSION_WIDTH//2, asteroids[collision].y + asteroids[collision].height //
                                       2 - EXPLOSION_HEIGHT//2, EXPLOSION_WIDTH, EXPLOSION_HEIGHT, EXPLOSION_TIMEOUT)
                 asteroids.remove(asteroids[collision])
                 explosions.append(explosion)
@@ -182,29 +185,29 @@ class Bullet(pygame.Rect):
 class Spaceship(pygame.Rect):
     def __init__(self, x, y, width, height, color, key_up, key_down, key_left, key_right, key_shoot, hit_event):
         # self.rect = pygame.Rect(x, y, width, height)
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.color = color
-        self.vel = np.array([0.0, 0.0])
-        self.max_vel = 20  # px/frame
-        self.acc = 0.8  # px/frame^2
-        self.friction = 0.9  # px/frame^2
-        self.max_health = 5
-        self.health = self.max_health
-        self.max_bullets = 3
-        self.bullets = []
-        self.bullet_vel = 10
-        self.key_up = key_up
-        self.key_down = key_down
-        self.key_right = key_right
-        self.key_left = key_left
-        self.key_shoot = key_shoot
-        self.hit_event = hit_event
+        self.x=x
+        self.y=y
+        self.width=width
+        self.height=height
+        self.color=color
+        self.vel=np.array([0.0, 0.0])
+        self.max_vel=20  # px/frame
+        self.acc=0.8  # px/frame^2
+        self.friction=0.9  # px/frame^2
+        self.max_health=5
+        self.health=self.max_health
+        self.max_bullets=3
+        self.bullets=[]
+        self.bullet_vel=10
+        self.key_up=key_up
+        self.key_down=key_down
+        self.key_right=key_right
+        self.key_left=key_left
+        self.key_shoot=key_shoot
+        self.hit_event=hit_event
 
     def handle_acceleration(self, keys_pressed):
-        acc_direction = np.array([0.0, 0.0])
+        acc_direction=np.array([0.0, 0.0])
 
         if keys_pressed[self.key_left]:  # LEFT
             print('LEFT')
@@ -221,7 +224,7 @@ class Spaceship(pygame.Rect):
 
         # if no key pressed, apply friction
         if acc_direction[0] == 0.0 and acc_direction[1] == 0.0:
-            self.vel = np.array([0.0, 0.0]) if np.linalg.norm(
+            self.vel=np.array([0.0, 0.0]) if np.linalg.norm(
                 self.vel) < 0.01 else self.vel * self.friction
 
         # apply acceleration
@@ -260,10 +263,11 @@ class Spaceship(pygame.Rect):
             self.y = HEIGHT - self.height
             self.vel[1] = 0.0
 
-    def handle_collisions(self, asteroids):
+    def handle_collisions(self, asteroids, items):
         for asteroid in asteroids:
             print('checking collisions with', asteroid)
             if self.colliderect(asteroid):
+                items.append(Ammo(self.x, self.y))
                 asteroids.remove(asteroid)
                 pygame.event.post(pygame.event.Event(YELLOW_HIT))
 
@@ -316,7 +320,7 @@ class Background():
             self.scroll = 0
 
 
-def draw_window(backgrounds, spaceships,  bullets, explosions, asteroids):
+def draw_window(backgrounds, spaceships,  bullets, explosions, asteroids, items):
 
     for background in backgrounds:
         background.draw(WIN)
@@ -334,6 +338,9 @@ def draw_window(backgrounds, spaceships,  bullets, explosions, asteroids):
 
     for asteroid in asteroids:
         asteroid.draw(WIN)
+
+    for item in items:
+        item.draw(WIN)
 
     pygame.display.update()
 
@@ -357,6 +364,7 @@ def main():
     bullets = []
     explosions = []
     asteroids = []
+    items = []
 
     clock = pygame.time.Clock()
     run = True
@@ -369,6 +377,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
+                sys.exit()
 
             if event.type == pygame.KEYDOWN:
                 for spaceship in spaceships:
@@ -396,7 +405,7 @@ def main():
 
         if winner_text != "":
             draw_window(backgrounds, spaceships,
-                        bullets, explosions, asteroids)
+                        bullets, explosions, asteroids, items)
             draw_winner(winner_text)
             break
 
@@ -408,9 +417,10 @@ def main():
 
         keys_pressed = pygame.key.get_pressed()
         yellow.handle_movement(keys_pressed)
-        yellow.handle_collisions(asteroids)
+        yellow.handle_collisions(asteroids, items)
 
-        draw_window(backgrounds, spaceships, bullets, explosions, asteroids)
+        draw_window(backgrounds, spaceships, bullets,
+                    explosions, asteroids, items)
 
     main()
 
