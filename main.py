@@ -85,11 +85,24 @@ DEBUG_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join(
     'Assets', 'debug.png')), (40, 40))
 
 
-def remove_asteroid(arbiter, space, data):
-    print('Collision')
-    print(arbiter, space, data)
-    asteroid_shape = arbiter.shapes[0]
-    space.remove(asteroid_shape, asteroid_shape.body)
+def remove_asteroid_and_bullet(arbiter, space, data):
+    a = arbiter.shapes[0]  # Asteroid
+    b = arbiter.shapes[1]  # Bullet
+
+    # Spawn explosion
+    x, y = a._get_body().position
+    data['explosions'].append(
+        Explosion(x-a.radius, y-a.radius, a.radius, a.radius, EXPLOSION_TIMEOUT))
+
+    # Remove asteroid
+    space.remove(a, a.body)
+    try:
+        data['asteroids'].remove(a)
+    except ValueError:
+        pass
+    # Remove bullet
+    space.remove(b, b.body)
+    data['bullets'].remove(b)
 
 
 class Ammo(pygame.Rect):
@@ -123,57 +136,6 @@ class Explosion(pygame.Rect):
             return False
 
 
-# class Bullet(pygame.Rect):
-#     def __init__(self, x, y, width, height, color, owner):
-#         self.x = x
-#         self.y = y
-#         self.width = width
-#         self.height = height
-#         self.color = color
-#         self.owner = owner  # owner is immune to damage from this Bullet
-
-#         BULLET_FIRE_SOUND.play()
-
-#     def handle_movement(self, spaceships, bullets, asteroids, explosions):
-#         if self.color == YELLOW:
-#             self.x += BULLET_VEL
-#         elif self.color == RED:
-#             self.x -= BULLET_VEL
-#         else:
-#             raise ValueError
-
-#         for collision in self.collidelistall(spaceships):
-#             if spaceships[collision] != self.owner:
-#                 self.owner.bullets.remove(self)
-#                 bullets.remove(self)
-#                 pygame.event.post(pygame.event.Event(
-#                     spaceships[collision].hit_event))
-
-#         # for collision in self.collidelistall(asteroids):
-#         #     if asteroids[collision] != self.owner:
-#         #         print(self.owner.bullets)
-#         #         explosion = Explosion(asteroids[collision].x + asteroids[collision].width//2 - EXPLOSION_WIDTH//2, asteroids[collision].y + asteroids[collision].height //
-#         #                               2 - EXPLOSION_HEIGHT//2, EXPLOSION_WIDTH, EXPLOSION_HEIGHT, EXPLOSION_TIMEOUT)
-#         #         asteroids.remove(asteroids[collision])
-#         #         explosions.append(explosion)
-
-#         #         self.owner.bullets.remove(self)
-#         #         bullets.remove(self)
-#         #         break
-
-#         if self.is_out_of_bounds():
-#             self.owner.bullets.remove(self)
-#             bullets.remove(self)
-
-#     def is_out_of_bounds(self):
-#         if self.x < 0 or self.x > WIDTH or self.y < 0 or self.y > HEIGHT:
-#             return True
-#         return False
-
-#     def draw(self, win):
-#         pygame.draw.rect(win, self.color, self)
-
-
 class Background():
     def __init__(self, image,  scroll_speed):
         self.image = image
@@ -204,7 +166,7 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
 
     for bullet in bullets:
         if bullet.is_out_of_bounds():
-            space.remove(bullet.body, bullet.shape)
+            space.remove(bullet.body, bullet)
             bullets.remove(bullet)
         else:
             bullet.draw(WIN)
@@ -216,7 +178,7 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
 
     for asteroid in asteroids:
         if asteroid.is_out_of_bounds():
-            space.remove(asteroid.body, asteroid.shape)
+            space.remove(asteroid.body, asteroid)
             asteroids.remove(asteroid)
         else:
             asteroid.draw(WIN)
@@ -228,18 +190,6 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
 
     for item in items:
         item.draw(WIN)
-
-
-# def draw_winner(text):
-#     draw_text = WINNER_FONT.render(text, 1, WHITE)
-#     WIN.blit(draw_text, (config.screen_width//2 - draw_text.get_width() //
-#              2, HEIGHT//2 - draw_text.get_height()//2))
-#     pygame.display.update()
-#     pygame.time.delay(5000)
-
-
-# def collect_trash(asteroids, pusher, items, bullets):
-#     for asteroid in asteroids:
 
 
 def main():
@@ -265,7 +215,11 @@ def main():
     h = space.add_collision_handler(
         config.collision_types["asteroid"], config.collision_types["bullet"])
 
-    h.separate = remove_asteroid
+    h.data['asteroids'] = asteroids
+    h.data['bullets'] = bullets
+    h.data['explosions'] = explosions
+
+    h.post_solve = remove_asteroid_and_bullet
 
     # Game setting
     wave_countdown = 10
@@ -279,13 +233,9 @@ def main():
 
         wave_countdown -= 1
 
-        for asteroid in asteroids:
-            print(asteroid.body, asteroid.shape)
-
         if wave_countdown == 0:
             wave_countdown = wave_interval
-            # Wave(2, 10, [20, 30, 40], 2000000, ASTEROID)
-            wave = Wave(1, 1, [20, 30, 40], 2000000, ASTEROID)
+            wave = Wave(2, 10, [20, 30, 40], 2000000, ASTEROID)
             waves.append(wave)
             for asteroid in wave.asteroids:
                 asteroids.append(asteroid)
@@ -302,12 +252,13 @@ def main():
                 for spaceship in spaceships:
                     if event.key == spaceship.key_shoot and len(bullets) < spaceship.max_bullets:
                         bullet = Bullet((spaceship.x+spaceship.width, spaceship.y +
-                                        spaceship.height//2 - 2), (30, 5), 5, BULLET)
-                        space.add(bullet.body, bullet.shape)
+                                         spaceship.height//2 - 2), (20, 5), 5, BULLET)
+                        # bullet = Bullet((30, 250), (20, 30), 10, BULLET)
+                        space.add(bullet.body, bullet)
                         bullets.append(bullet)
                         spaceship.bullets.append(bullet)
                         # Shoot
-                        bullet.shape.body.apply_impulse_at_local_point(
+                        bullet.body.apply_impulse_at_local_point(
                             (2000, 0), (0, 0))
 
             if event.type == YELLOW_HIT:

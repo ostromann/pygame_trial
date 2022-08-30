@@ -1,17 +1,19 @@
+import math
 import pygame
 import pymunk
 import numpy as np
 from .Asteroid import Asteroid
 from .Pusher import Pusher
+from . import config
 
 
 class Wave():
-    def __init__(self, rows, cols, asteroid_sizes, force, image):
+    def __init__(self, rows, cols, asteroid_radii, force, image):
         # TODO: Do something something smart here for the placement
         self.pos = (1200, 200)
         self.rows = rows
         self.cols = cols
-        self.asteroid_sizes = asteroid_sizes
+        self.asteroid_radii = asteroid_radii
         self.force = force
         self.image = image
         self.asteroids = []
@@ -23,29 +25,17 @@ class Wave():
         for i in range(0, self.cols):
             for j in range(0, self.rows):
                 x, y = self.pos
-                grid_size = np.max(self.asteroid_sizes)
+                grid_size = np.max(self.asteroid_radii)
                 spawn_point = (x + j * grid_size, y + i * grid_size)
-                size = np.random.choice(self.asteroid_sizes)
-                mass = size * 5  # TODO: Compute mass based on volume
-
-                # TODO: The asteroid image (as all other, should perhaps be globally accessible?)
+                radius = np.random.choice(self.asteroid_radii)
+                mass = 4/3 * math.pi * radius**3 * config.asteroid_density
                 self.asteroids.append(
-                    Asteroid(spawn_point, size, mass, self.image))
-
-    # def spawn_pusher(self):
-    #     body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)
-    #     body.position = (self.pos[0]+300, self.pos[1])
-    #     shape = pymunk.Poly.create_box(body, (20, 1200))
-    #     shape.mass = 10000
-    #     shape.elasticity = 0.5
-    #     shape.friction = 0.5
-
-    #     return body, shape
+                    Asteroid(spawn_point, radius, mass, self.image))
 
     def launch(self, space):
         # Add asteroids
         for asteroid in self.asteroids:
-            space.add(asteroid.body, asteroid.shape)
+            space.add(asteroid.body, asteroid)
 
         # Add Pusher
         space.add(self.pusher.body, self.pusher.shape)
