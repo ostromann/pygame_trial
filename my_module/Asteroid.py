@@ -3,10 +3,11 @@ import pygame
 import math
 from . import utils
 from . import config
+from . import assets
 
 
 class Asteroid(pymunk.Circle):
-    def __init__(self, pos, radius, mass, image):
+    def __init__(self, pos, radius, mass):
         body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)
         body.position = pos
 
@@ -17,7 +18,7 @@ class Asteroid(pymunk.Circle):
         self.color = (255, 0, 0, 0)
         self.collision_type = config.collision_types['asteroid']
         self.image = pygame.transform.scale(
-            image, (self.radius*2, self.radius*2))
+            assets.images['asteroid'], (self.radius*2, self.radius*2))
 
     def draw(self, win):
         angle = math.degrees(-self._get_body().angle)
@@ -28,8 +29,8 @@ class Asteroid(pymunk.Circle):
 
     def is_out_of_bounds(self):
         x, y = self._get_body().position
-        if x < 200:
+        if x < -20:
             return True
-        if y < -50 or y > 500:
+        if y < -50 or y > config.screen_height + 50:
             return True
         return False

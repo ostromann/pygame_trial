@@ -3,10 +3,11 @@ import pymunk
 import math
 from . import utils
 from . import config
+from . import assets
 
 
 class Bullet(pymunk.Poly):
-    def __init__(self, pos, size, mass, image):
+    def __init__(self, pos, size, mass):
         body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)
         body.position = pos
 
@@ -23,9 +24,8 @@ class Bullet(pymunk.Poly):
         self.color = (255, 0, 0, 100)
         self.collision_type = config.collision_types['bullet']
         self.image = pygame.transform.scale(
-            image, size)
-        self.sound = pygame.mixer.Sound(config.bullet_fire_sound)
-        self.sound.play()
+            assets.images['bullet'], size)
+        assets.sounds['bullet_fire'].play()
 
     def draw(self, win):
         angle = math.degrees(-self._get_body().angle)

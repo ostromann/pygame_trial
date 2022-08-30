@@ -8,7 +8,7 @@ import pymunk.pygame_util
 import numpy as np
 import math
 
-from my_module.Asteroid import Asteroid
+from my_module.Explosion import Explosion
 from my_module.Spaceship import Spaceship
 from my_module.Bullet import Bullet
 from my_module.Wave import Wave
@@ -16,7 +16,6 @@ from my_module import config
 
 
 pygame.font.init()
-pygame.mixer.init()
 
 WIN = pygame.display.set_mode((config.screen_width, config.screen_height))
 pygame.display.set_caption("First Game!")
@@ -25,20 +24,6 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
-
-
-BULLET_HIT_SOUND = pygame.mixer.Sound(os.path.join('Assets', 'Grenade+1.mp3'))
-BULLET_FIRE_SOUND = pygame.mixer.Sound(
-    os.path.join('Assets', 'Gun+Silencer.mp3'))
-
-
-# VEL = 5
-# # ACC = 2  # px/frame^2
-# # MAX_VEL = 10  # px/frame
-# BULLET_VEL = 10
-# MAX_BULLETS = 7
-# MAX_HEALTH = 3
-
 
 SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 40, 55
 
@@ -55,15 +40,13 @@ RED_SPACESHIP_IMAGE = pygame.image.load(
 RED_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(
     RED_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 180)
 
-# SPACE = pygame.transform.scale(pygame.image.load(
-#     os.path.join('Assets', 'space.png')), (WIDTH, HEIGHT))
 
 # load background image
 SPACE = pygame.image.load(os.path.join(
     'Assets', 'space_endless.png')).convert()
 
 STARS = pygame.image.load(os.path.join(
-    'Assets', 'stars_endless.png')).convert_alpha()
+    'Assets', 'stars.png')).convert_alpha()
 
 SHIELD_WIDTH, SHIELD_HEIGHT = 10, 10
 
@@ -71,12 +54,6 @@ YELLOW_SHIELD = pygame.transform.scale(pygame.image.load(
     os.path.join('Assets', 'shield_yellow.png')), (SHIELD_WIDTH, SHIELD_HEIGHT))
 RED_SHIELD = pygame.transform.scale(pygame.image.load(
     os.path.join('Assets', 'shield_red.png')), (SHIELD_WIDTH, SHIELD_HEIGHT))
-
-EXPLOSION_WIDTH, EXPLOSION_HEIGHT = 70, 70
-EXPLOSION = pygame.transform.scale(pygame.image.load(os.path.join(
-    'Assets', 'explosion.png')), (EXPLOSION_WIDTH, EXPLOSION_HEIGHT))
-
-EXPLOSION_TIMEOUT = 5
 
 ASTEROID = pygame.image.load(os.path.join('Assets', 'asteroid.png'))
 BULLET = pygame.image.load(os.path.join('Assets', 'bullet.png'))
@@ -89,10 +66,11 @@ def remove_asteroid_and_bullet(arbiter, space, data):
     a = arbiter.shapes[0]  # Asteroid
     b = arbiter.shapes[1]  # Bullet
 
+    print(a)
     # Spawn explosion
-    x, y = a._get_body().position
-    data['explosions'].append(
-        Explosion(x-a.radius, y-a.radius, a.radius, a.radius, EXPLOSION_TIMEOUT))
+    print(
+        f'create explosion at: {a._get_body().position} with size {a.radius} x {a.radius}')
+    data['explosions'].append(Explosion(a._get_body().position, a.radius))
 
     # Remove asteroid
     space.remove(a, a.body)
@@ -102,7 +80,10 @@ def remove_asteroid_and_bullet(arbiter, space, data):
         pass
     # Remove bullet
     space.remove(b, b.body)
-    data['bullets'].remove(b)
+    try:
+        data['bullets'].remove(b)
+    except ValueError:
+        pass
 
 
 class Ammo(pygame.Rect):
@@ -114,26 +95,6 @@ class Ammo(pygame.Rect):
 
     def draw(self, win):
         pygame.draw.rect(win, (255, 0, 0), self)
-
-
-class Explosion(pygame.Rect):
-    def __init__(self, x, y, width, height, duration):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.duration = duration
-
-        BULLET_HIT_SOUND.play()
-
-    def draw(self, win):
-        if self.duration > 0:
-            win.blit(EXPLOSION, (self.x, self.y))
-            self.duration -= 1
-            print(f'explosion rendered, duration: {self.duration}')
-            return True
-        else:
-            return False
 
 
 class Background():
@@ -173,7 +134,6 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
 
     for explosion in explosions:
         if not explosion.draw(WIN):
-            print('explosion removed')
             explosions.remove(explosion)
 
     for asteroid in asteroids:
@@ -235,7 +195,7 @@ def main():
 
         if wave_countdown == 0:
             wave_countdown = wave_interval
-            wave = Wave(2, 10, [20, 30, 40], 2000000, ASTEROID)
+            wave = Wave(2, 10, [20, 30, 40], 2000000)
             waves.append(wave)
             for asteroid in wave.asteroids:
                 asteroids.append(asteroid)
@@ -252,7 +212,7 @@ def main():
                 for spaceship in spaceships:
                     if event.key == spaceship.key_shoot and len(bullets) < spaceship.max_bullets:
                         bullet = Bullet((spaceship.x+spaceship.width, spaceship.y +
-                                         spaceship.height//2 - 2), (20, 5), 5, BULLET)
+                                         spaceship.height//2 - 2), (20, 5), 5)
                         # bullet = Bullet((30, 250), (20, 30), 10, BULLET)
                         space.add(bullet.body, bullet)
                         bullets.append(bullet)
@@ -262,8 +222,8 @@ def main():
                             (2000, 0), (0, 0))
 
             if event.type == YELLOW_HIT:
-                explosion = Explosion(yellow.x + yellow.width//2 - EXPLOSION_WIDTH//2, yellow.y + yellow.height //
-                                      2 - EXPLOSION_HEIGHT//2, EXPLOSION_WIDTH, EXPLOSION_HEIGHT, EXPLOSION_TIMEOUT)
+                explosion = Explosion(yellow.x + yellow.width/2, yellow.y + yellow.height/2,
+                                      yellow.width, yellow.height, config.explosion_timeout)
                 explosions.append(explosion)
                 yellow.health -= 1
 
