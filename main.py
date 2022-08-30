@@ -1,24 +1,19 @@
-import ast
-from cmath import isnan
 import sys
 import os
 import pygame
 import pymunk
 import pymunk.pygame_util
-import numpy as np
-import math
 
+from my_module.Background import Background
+from my_module.Bullet import Bullet
 from my_module.Explosion import Explosion
 from my_module.Spaceship import Spaceship
-from my_module.Bullet import Bullet
 from my_module.Wave import Wave
 from my_module import config
-
-
-pygame.font.init()
+from my_module import assets
 
 WIN = pygame.display.set_mode((config.screen_width, config.screen_height))
-pygame.display.set_caption("First Game!")
+pygame.display.set_caption("Asteroid Impact")
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -28,38 +23,6 @@ YELLOW = (255, 255, 0)
 SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 40, 55
 
 YELLOW_HIT = pygame.USEREVENT + 1
-RED_HIT = pygame.USEREVENT + 2
-
-YELLOW_SPACESHIP_IMAGE = pygame.image.load(
-    os.path.join('Assets', 'spaceship_yellow.png'))
-YELLOW_SPACESHIP = pygame.transform.scale(
-    YELLOW_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT))
-
-RED_SPACESHIP_IMAGE = pygame.image.load(
-    os.path.join('Assets', 'spaceship_red.png'))
-RED_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(
-    RED_SPACESHIP_IMAGE, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 180)
-
-
-# load background image
-SPACE = pygame.image.load(os.path.join(
-    'Assets', 'space_endless.png')).convert()
-
-STARS = pygame.image.load(os.path.join(
-    'Assets', 'stars.png')).convert_alpha()
-
-SHIELD_WIDTH, SHIELD_HEIGHT = 10, 10
-
-YELLOW_SHIELD = pygame.transform.scale(pygame.image.load(
-    os.path.join('Assets', 'shield_yellow.png')), (SHIELD_WIDTH, SHIELD_HEIGHT))
-RED_SHIELD = pygame.transform.scale(pygame.image.load(
-    os.path.join('Assets', 'shield_red.png')), (SHIELD_WIDTH, SHIELD_HEIGHT))
-
-ASTEROID = pygame.image.load(os.path.join('Assets', 'asteroid.png'))
-BULLET = pygame.image.load(os.path.join('Assets', 'bullet.png'))
-
-DEBUG_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join(
-    'Assets', 'debug.png')), (40, 40))
 
 
 def remove_asteroid_and_bullet(arbiter, space, data):
@@ -97,27 +60,6 @@ class Ammo(pygame.Rect):
         pygame.draw.rect(win, (255, 0, 0), self)
 
 
-class Background():
-    def __init__(self, image,  scroll_speed):
-        self.image = image
-        self.tiles = math.ceil(config.screen_width /
-                               self.image.get_width()) + 1
-        self.scroll_speed = scroll_speed
-        self.scroll = 0
-
-    def draw(self, win):
-        # draw scrolling background
-        for i in range(0, self.tiles):
-            WIN.blit(self.image, (i * self.image.get_width() + self.scroll, 0))
-
-        # scroll background
-        self.scroll += self.scroll_speed
-
-        # reset scroll
-        if abs(self.scroll) > self.image.get_width():
-            self.scroll = 0
-
-
 def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosions, asteroids, items, pushers):
     for background in backgrounds:
         background.draw(WIN)
@@ -153,10 +95,9 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
 
 
 def main():
-    space_background = Background(SPACE, -1)
-    stars_background = Background(STARS, -2)
-    yellow = Spaceship(100, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT, YELLOW_SPACESHIP_IMAGE,
-                       pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_SPACE, YELLOW_HIT)
+    space_background = Background(assets.images['space'], -1, base_layer=True)
+    stars_background = Background(assets.images['stars'], -2)
+    yellow = Spaceship(100, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
 
     backgrounds = [space_background, stars_background]
     spaceships = [yellow]
@@ -210,14 +151,12 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 for spaceship in spaceships:
-                    if event.key == spaceship.key_shoot and len(bullets) < spaceship.max_bullets:
+                    if event.key == config.keys['shoot'] and len(bullets) < spaceship.max_bullets:
                         bullet = Bullet((spaceship.x+spaceship.width, spaceship.y +
                                          spaceship.height//2 - 2), (20, 5), 5)
-                        # bullet = Bullet((30, 250), (20, 30), 10, BULLET)
                         space.add(bullet.body, bullet)
                         bullets.append(bullet)
                         spaceship.bullets.append(bullet)
-                        # Shoot
                         bullet.body.apply_impulse_at_local_point(
                             (2000, 0), (0, 0))
 

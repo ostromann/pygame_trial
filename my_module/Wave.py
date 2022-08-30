@@ -7,15 +7,27 @@ from .Pusher import Pusher
 from . import config
 
 
+''' TODO: Is it a good idea to create waves like this with a string
+----L-M-S----MMM-L---
+--L--S-S-S--L---L----
+where:
+-: no asteroid
+L: large asteroid
+M: medium
+S: small
+
+could also spawn items in the same way etc.
+'''
+
+
 class Wave():
-    def __init__(self, rows, cols, asteroid_radii, force, image):
+    def __init__(self, rows, cols, asteroid_radii, force):
         # TODO: Do something something smart here for the placement
         self.pos = (1200, 200)
         self.rows = rows
         self.cols = cols
         self.asteroid_radii = asteroid_radii
         self.force = force
-        self.image = image
         self.asteroids = []
         self.spawn_asteroids()
         # TODO: perhaps this can be done nicer
@@ -30,7 +42,7 @@ class Wave():
                 radius = np.random.choice(self.asteroid_radii)
                 mass = 4/3 * math.pi * radius**3 * config.asteroid_density
                 self.asteroids.append(
-                    Asteroid(spawn_point, radius, mass, self.image))
+                    Asteroid(spawn_point, radius, mass))
 
     def launch(self, space):
         # Add asteroids

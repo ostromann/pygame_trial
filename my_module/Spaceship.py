@@ -1,16 +1,19 @@
 import pygame
+from . import config
+from . import assets
 import numpy as np
 
 
+# TODO: Make to pymunk.Poly
 class Spaceship(pygame.Rect):
-    def __init__(self, x, y, width, height, image, key_up, key_down, key_left, key_right, key_shoot, hit_event):
+    def __init__(self, x, y, width, height):
         # self.rect = pygame.Rect(x, y, width, height)
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.image = pygame.transform.scale(
-            image, (width, height))
+            assets.images['spaceship'], (width, height))
         self.color = (255, 255, 0)
         self.vel = np.array([0.0, 0.0])
         self.max_vel = 20  # px/frame
@@ -21,23 +24,17 @@ class Spaceship(pygame.Rect):
         self.max_bullets = 10
         self.bullets = []
         self.bullet_vel = 10
-        self.key_up = key_up
-        self.key_down = key_down
-        self.key_right = key_right
-        self.key_left = key_left
-        self.key_shoot = key_shoot
-        self.hit_event = hit_event
 
     def handle_acceleration(self, keys_pressed):
         acc_direction = np.array([0.0, 0.0])
 
-        if keys_pressed[self.key_left]:  # LEFT
+        if keys_pressed[config.keys['left']]:
             acc_direction[0] -= 1.0
-        if keys_pressed[self.key_right]:  # RIGHT
+        if keys_pressed[config.keys['right']]:
             acc_direction[0] += 1.0
-        if keys_pressed[self.key_up]:  # UP
+        if keys_pressed[config.keys['up']]:
             acc_direction[1] -= 1.0
-        if keys_pressed[self.key_down]:  # DOWN
+        if keys_pressed[config.keys['down']]:
             acc_direction[1] += 1.0
 
         # if no key pressed, apply friction
