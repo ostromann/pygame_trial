@@ -18,3 +18,7 @@ images = {
     'bullet': pygame.image.load(os.path.join('Assets', 'bullet.png')),
     'shield': pygame.image.load(os.path.join('Assets', 'shield.png')),
 }
+
+sprites = {
+    'spaceship': os.path.join('Assets', 'spaceship_sprites.png')
+}

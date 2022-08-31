@@ -12,7 +12,7 @@ fps = 30
 dt = 1/fps
 screen_width, screen_height = 900, 500  # 1400, 700
 
-spaceship_size = (40, 55)
+spaceship_size = (96, 96)
 spaceship_mass = 10
 asteroid_density = 0.0015
 explosion_timeout = 5

@@ -2,6 +2,7 @@ import pygame
 import pymunk
 
 from my_module.Bullet import Bullet
+from my_module.Spritesheet import Spritesheet
 from . import config
 from . import assets
 from . import utils
@@ -42,6 +43,13 @@ class Spaceship(pymunk.Poly):
 
         self.image_shield = pygame.transform.scale(
             assets.images['shield'], (self.size[0]/(self.max_health+1), self.size[0]/(self.max_health+1)))
+
+        sprite_sheet = Spritesheet(assets.sprites['spaceship'])
+        self.sprites = []
+        for i in range(0, 4):
+            self.sprites.append(pygame.transform.scale(sprite_sheet.get_sprite(
+                i, 0, 32, 32), (self.size[0], self.size[0])))
+        self.sprite_pointer = 0
 
     def handle_acceleration(self, keys_pressed):
         acc_direction = np.array([0.0, 0.0])
@@ -116,10 +124,11 @@ class Spaceship(pymunk.Poly):
         x -= self.size[0] / 2
         y -= self.size[1] / 2
         bullet = Bullet((x+self.size[0], y +
-                        self.size[1]//2 - 2), (20, 5), 5)
+                         self.size[1]//2), (20, 6), 5)
         return bullet
 
     def draw(self, win, bullets):
+
         # Render spaceship
         angle = math.degrees(-self._get_body().angle)
         x, y = self._get_body().position
@@ -128,14 +137,19 @@ class Spaceship(pymunk.Poly):
         y -= h / 2
 
         if self.invincible == 0:
-            utils.blitRotate2(win, self.image, (x, y), angle)
+            utils.blitRotate2(
+                win, self.sprites[self.sprite_pointer//3], (x, y), angle)
         else:
             # skip rendering, decrease invincible
             self.invincible -= 1
         if self.invincible % 2:
             # TODO: Fix the blinking
-            utils.blitRotate2(win, self.image, (x, y), angle)
+            utils.blitRotate2(
+                win, self.sprites[self.sprite_pointer//3], (x, y), angle)
             self.invincible -= 1
+
+        self.sprite_pointer += 1
+        self.sprite_pointer %= len(self.sprites)*3
 
         # Render available bullets
         for pos, slot in enumerate(range(self.max_bullets - len(bullets))):
