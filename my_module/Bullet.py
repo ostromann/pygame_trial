@@ -29,8 +29,8 @@ class Bullet(pymunk.Poly):
 
     def draw(self, win):
         angle = math.degrees(-self._get_body().angle)
-        x_offset = self.size[0] / 2  # if angle = 0
-        y_offset = self.size[1] / 2  # if angle = 0
+        x_offset = self.size[0] / 2
+        y_offset = self.size[1] / 2
         x, y = self._get_body().position
 
         utils.blitRotate2(win, self.image, (x-x_offset, y-y_offset), angle)

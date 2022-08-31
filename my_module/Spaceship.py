@@ -1,29 +1,47 @@
 import pygame
+import pymunk
+
+from my_module.Bullet import Bullet
 from . import config
 from . import assets
+from . import utils
+import math
 import numpy as np
 
 
-# TODO: Make to pymunk.Poly
-class Spaceship(pygame.Rect):
-    def __init__(self, x, y, width, height):
-        # self.rect = pygame.Rect(x, y, width, height)
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
+# TODO: Make to pymunk.Poly as Kinematic type
+class Spaceship(pymunk.Poly):
+    def __init__(self, pos):
+        body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+        body.position = pos
+
+        self.size = config.spaceship_size
+
+        w, h = self.size[0], self.size[1]
+        vs = [(-w/2, -h/2), (w/2, -h/2), (w/2, h/2), (-w/2, h/2)]
+
+        super().__init__(body, vs)
+        self.mass = config.spaceship_mass
+        self.elasticity = 0.4
+        self.friction = 0.4
+        self.color = (255, 255, 0, 100)
+        self.collision_type = config.collision_types['spaceship']
         self.image = pygame.transform.scale(
-            assets.images['spaceship'], (width, height))
-        self.color = (255, 255, 0)
+            assets.images['spaceship'], self.size)
+
         self.vel = np.array([0.0, 0.0])
-        self.max_vel = 20  # px/frame
-        self.acc = 0.8  # px/frame^2
+        self.max_vel = 800  # px/frame
+        self.acc = 50  # px/frame^2
         self.friction = 0.9  # px/frame^2
-        self.max_health = 5
+        self.max_health = 3
         self.health = self.max_health
         self.max_bullets = 10
         self.bullets = []
         self.bullet_vel = 10
+        self.invincible = 0
+
+        self.image_shield = pygame.transform.scale(
+            assets.images['shield'], (self.size[0]/(self.max_health+1), self.size[0]/(self.max_health+1)))
 
     def handle_acceleration(self, keys_pressed):
         acc_direction = np.array([0.0, 0.0])
@@ -52,59 +70,80 @@ class Spaceship(pygame.Rect):
 
         # limit velocity
         if np.linalg.norm(self.vel) > self.max_vel:
-            # print('reached max vel')
             v_hat = self.vel / np.linalg.norm(self.vel)
-            # print('unit vector', v_hat)
             self.vel = v_hat * self.max_vel
-            # print('limited', self.vel)
 
     def handle_movement(self, keys_pressed, win):
+        pass
         self.handle_acceleration(keys_pressed)
 
-        self.x += self.vel[0]
-        self.y += self.vel[1]
+        self.body.velocity = (self.vel[0], self.vel[1])
 
+        x, y = self._get_body().position
+        w, h = self.size
+        w /= 2
+        h /= 2
         win_height = win.get_height()
         win_width = win.get_width()
 
         # check boundary collision
-        if self.x < 0:
-            self.x = 0
+        boundary_collision = False
+        if x - w < 0:
+            x = 0 + w
             self.vel[0] = 0.0
-        if self.x + self.width > win_width:
-            self.x = win_width - self.width
+            boundary_collision = True
+        if x + w > win_width:
+            x = win_width - w
             self.vel[0] = 0.0
-        if self.y < 0:
-            self.y = 0
+            boundary_collision = True
+        if y - h < 0:
+            y = 0 + h
             self.vel[1] = 0.0
-        if self.y + self.height > win_height:
-            self.y = win_height - self.height
+            boundary_collision = True
+        if y + h > win_height:
+            y = win_height - h
             self.vel[1] = 0.0
+            boundary_collision = True
 
-    # def handle_collisions(self, asteroids, items):
-        # for asteroid in asteroids:
-        #     print('checking collisions with', asteroid)
-        #     if self.colliderect(asteroid):
-        #         items.append(Ammo(self.x, self.y))
-        #         asteroids.remove(asteroid)
-        #         pygame.event.post(pygame.event.Event(YELLOW_HIT))
+        if boundary_collision:
+            self.body.position = (x, y)
+
+        # Set velocity
+
+    def shoot(self):
+        angle = math.degrees(-self._get_body().angle)
+        x, y = self._get_body().position
+        x -= self.size[0] / 2
+        y -= self.size[1] / 2
+        bullet = Bullet((x+self.size[0], y +
+                        self.size[1]//2 - 2), (20, 5), 5)
+        return bullet
 
     def draw(self, win, bullets):
         # Render spaceship
-        win.blit(self.image, (self.x, self.y))
+        angle = math.degrees(-self._get_body().angle)
+        x, y = self._get_body().position
+        w, h = self.size[0], self.size[1]
+        x -= w / 2
+        y -= h / 2
+
+        if self.invincible == 0:
+            utils.blitRotate2(win, self.image, (x, y), angle)
+        else:
+            # skip rendering, decrease invincible
+            self.invincible -= 1
+        if self.invincible % 2:
+            # TODO: Fix the blinking
+            utils.blitRotate2(win, self.image, (x, y), angle)
+            self.invincible -= 1
 
         # Render available bullets
         for pos, slot in enumerate(range(self.max_bullets - len(bullets))):
-            slot_width = self.width//self.max_bullets-2
+            slot_width = w//self.max_bullets-2
             slot_height = 10
             pygame.draw.rect(win, self.color, pygame.Rect(
-                self.x + (slot_width + 2)*pos, self.y-slot_height, slot_width, slot_height))
+                x + (slot_width + 2)*pos, y-slot_height, slot_width, slot_height))
 
-        # # Render shields
-        # for pos, slot in enumerate(range(self.health)):
-        #     if self.color == YELLOW:
-        #         win.blit(YELLOW_SHIELD, (self.x + 10*pos,
-        #                                  self.y + self.height))
-        #     elif self.color == RED:
-        #         win.blit(RED_SHIELD, (self.x + 10*pos,
-        #                               self.y + self.height))
+        # Render shields
+        for pos, slot in enumerate(range(self.health)):
+            win.blit(self.image_shield, (x + 10*pos, y + h))

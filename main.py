@@ -12,6 +12,7 @@ from my_module.Wave import Wave
 from my_module import config
 from my_module import assets
 
+pygame.font.init()
 WIN = pygame.display.set_mode((config.screen_width, config.screen_height))
 pygame.display.set_caption("Asteroid Impact")
 
@@ -20,9 +21,30 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 
-SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 40, 55
+WINNER_FONT = pygame.font.SysFont('impact', 100)
+
+# SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 40, 55
 
 YELLOW_HIT = pygame.USEREVENT + 1
+
+
+def spaceship_hit(arbiter, space, data):
+    a = arbiter.shapes[0]  # Asteroid
+    b = arbiter.shapes[1]  # Ship
+
+    # Spawn explosion
+    print(
+        f'create explosion at: {a._get_body().position} with size {a.radius} x {a.radius}')
+    data['explosions'].append(Explosion(a._get_body().position, a.radius))
+
+    # Remove asteroid
+    space.remove(a, a.body)
+    try:
+        data['asteroids'].remove(a)
+    except ValueError:
+        pass
+
+    pygame.event.post(pygame.event.Event(YELLOW_HIT))
 
 
 def remove_asteroid_and_bullet(arbiter, space, data):
@@ -94,13 +116,17 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
         item.draw(WIN)
 
 
-def main():
-    space_background = Background(assets.images['space'], -1, base_layer=True)
-    stars_background = Background(assets.images['stars'], -2)
-    yellow = Spaceship(100, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
+def draw_winner(text):
+    draw_text = WINNER_FONT.render(text, 1, WHITE)
+    WIN.blit(draw_text, (config.screen_width//2 - draw_text.get_width() //
+             2, config.screen_height//2 - draw_text.get_height()//2))
+    pygame.display.update()
+    pygame.time.delay(5000)
 
-    backgrounds = [space_background, stars_background]
-    spaceships = [yellow]
+
+def main():
+    backgrounds = []
+    spaceships = []
     bullets = []
     explosions = []
     asteroids = []
@@ -113,14 +139,27 @@ def main():
     space = pymunk.Space()
     space.gravity = (0, 0)  # y increases downward in pygame
 
+    # Collision
     h = space.add_collision_handler(
         config.collision_types["asteroid"], config.collision_types["bullet"])
-
     h.data['asteroids'] = asteroids
     h.data['bullets'] = bullets
     h.data['explosions'] = explosions
-
     h.post_solve = remove_asteroid_and_bullet
+
+    # Collision
+    h2 = space.add_collision_handler(
+        config.collision_types["asteroid"], config.collision_types["spaceship"])
+    h2.data['asteroids'] = asteroids
+    h2.data['explosions'] = explosions
+    h2.post_solve = spaceship_hit
+
+    backgrounds.append(Background(assets.images['space'], -1, base_layer=True))
+    backgrounds.append(Background(assets.images['stars'], -2))
+    yellow = Spaceship((100, 300))
+    space.add(yellow.body, yellow)
+    spaceships.append(yellow)
+    # space.add(yellow.body, yellow)
 
     # Game setting
     wave_countdown = 10
@@ -152,8 +191,9 @@ def main():
             if event.type == pygame.KEYDOWN:
                 for spaceship in spaceships:
                     if event.key == config.keys['shoot'] and len(bullets) < spaceship.max_bullets:
-                        bullet = Bullet((spaceship.x+spaceship.width, spaceship.y +
-                                         spaceship.height//2 - 2), (20, 5), 5)
+                        bullet = spaceship.shoot()
+                        # bullet = Bullet((spaceship.x+spaceship.width, spaceship.y +
+                        #                  spaceship.height//2 - 2), (20, 5), 5)
                         space.add(bullet.body, bullet)
                         bullets.append(bullet)
                         spaceship.bullets.append(bullet)
@@ -161,10 +201,18 @@ def main():
                             (2000, 0), (0, 0))
 
             if event.type == YELLOW_HIT:
-                explosion = Explosion(yellow.x + yellow.width/2, yellow.y + yellow.height/2,
-                                      yellow.width, yellow.height, config.explosion_timeout)
-                explosions.append(explosion)
+                yellow.invincible = 15
                 yellow.health -= 1
+
+        winner_text = ""
+        if yellow.health <= 0:
+            winner_text = "Game over!"
+
+        if winner_text != "":
+            draw_window(space, draw_options,  backgrounds, spaceships, bullets,
+                        explosions, asteroids, items, pushers)
+            draw_winner(winner_text)
+            break
 
         keys_pressed = pygame.key.get_pressed()
         yellow.handle_movement(keys_pressed, WIN)
