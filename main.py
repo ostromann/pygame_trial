@@ -207,7 +207,7 @@ def main():
                             bullets.append(bullet)
                             spaceship.bullets.append(bullet)
                             bullet.body.apply_impulse_at_local_point(
-                                (0, -20), (0, 0))
+                                (0, -1000), (0, 0))
 
             if event.type == YELLOW_HIT:
                 yellow.invincible = 15

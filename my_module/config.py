@@ -8,11 +8,11 @@ collision_types = {
     "item": 4,
 }
 
-fps = 10
+fps = 30
 dt = 1/fps
 scale = 2
 # 256, 512  # 128, 256  # 900, 500  # 1400, 700
-screen_width, screen_height = 128 * 2, 256 * 2
+screen_width, screen_height = 128 * scale, 256 * scale
 
 spaceship_size = (16, 16)
 spaceship_mass = 10

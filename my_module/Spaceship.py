@@ -10,7 +10,7 @@ import math
 import numpy as np
 
 
-# TODO: Make to pymunk.Poly as Kinematic type
+# TODO: Disable collision between Bullets and Spaceship
 class Spaceship(pymunk.Poly):
     def __init__(self, pos):
         body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
@@ -137,11 +137,13 @@ class Spaceship(pymunk.Poly):
         y -= h / 2
 
         bullets = []
-        self.weapons = [(-3*2, -3*2), (+3*2, -3*2)]
+        self.weapons = [(-3*config.scale, -5*config.scale - 5*config.scale),
+                        (+3*config.scale, -5*config.scale - 5*config.scale)]
         for weapon in self.weapons:
             x, y = self._get_body().position + weapon
             print('Spaceship:', self._get_body().position, 'Bullet:', x, y)
-            bullets.append(Bullet((x, y), (2, 5), 5))
+            bullets.append(
+                Bullet((x, y), (1*config.scale, 10*config.scale), 5))
         return bullets
 
     def draw(self, win, bullets):
