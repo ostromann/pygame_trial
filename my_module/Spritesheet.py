@@ -9,5 +9,5 @@ class Spritesheet(pygame.sprite.Sprite):
 
     def get_sprite(self, x, y, w, h):
         sprite = pygame.Surface((w, h), pygame.SRCALPHA)
-        sprite.blit(self.spritesheet, (0, 0), (x*w, y, w, h))
+        sprite.blit(self.spritesheet, (0, 0), (x*w, y*h, w, h))
         return sprite

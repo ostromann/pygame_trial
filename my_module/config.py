@@ -8,14 +8,16 @@ collision_types = {
     "item": 4,
 }
 
-fps = 30
+fps = 10
 dt = 1/fps
-screen_width, screen_height = 900, 500  # 1400, 700
+scale = 2
+# 256, 512  # 128, 256  # 900, 500  # 1400, 700
+screen_width, screen_height = 128 * 2, 256 * 2
 
-spaceship_size = (96, 96)
+spaceship_size = (16, 16)
 spaceship_mass = 10
 asteroid_density = 0.0015
-explosion_timeout = 5
+explosion_timeout = 4*4
 
 # keybindings
 keys = {

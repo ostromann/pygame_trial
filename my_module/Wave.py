@@ -23,7 +23,7 @@ could also spawn items in the same way etc.
 class Wave():
     def __init__(self, rows, cols, asteroid_radii, force):
         # TODO: Do something something smart here for the placement
-        self.pos = (1200, 200)
+        self.pos = (10, 0)
         self.rows = rows
         self.cols = cols
         self.asteroid_radii = asteroid_radii
@@ -31,13 +31,15 @@ class Wave():
         self.asteroids = []
         self.spawn_asteroids()
         # TODO: perhaps this can be done nicer
-        self.pusher = Pusher((self.pos[0]+300, self.pos[1]), (20, 1200), 10000)
+        self.pusher = Pusher((config.screen_width / 2, 0),
+                             (config.screen_width, 20), 20000)
 
     def spawn_asteroids(self):
         for i in range(0, self.cols):
             for j in range(0, self.rows):
                 x, y = self.pos
-                grid_size = np.max(self.asteroid_radii)
+                y += 32
+                grid_size = np.max(self.asteroid_radii*4)
                 spawn_point = (x + j * grid_size, y + i * grid_size)
                 radius = np.random.choice(self.asteroid_radii)
                 mass = 4/3 * math.pi * radius**3 * config.asteroid_density
@@ -50,8 +52,8 @@ class Wave():
             space.add(asteroid.body, asteroid)
 
         # Add Pusher
-        space.add(self.pusher.body, self.pusher.shape)
+        space.add(self.pusher.body, self.pusher)
 
         # Launch
         self.pusher.body.apply_impulse_at_local_point(
-            (-self.force, 0), (0, 0))
+            (0, self.force), (0, 0))

@@ -20,5 +20,10 @@ images = {
 }
 
 sprites = {
-    'spaceship': os.path.join('Assets', 'spaceship_sprites.png')
+    'spaceship': os.path.join('Assets', 'spaceship_sprites.png'),
+    'miscellaneous': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Miscellaneous.png'),
+    'spaceships': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Ships.png'),
+    'backgrounds': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Backgrounds.png'),
+    'ui': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_UI.png'),
+    'projectile': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Projectile.png'),
 }

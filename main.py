@@ -8,6 +8,7 @@ from my_module.Background import Background
 from my_module.Bullet import Bullet
 from my_module.Explosion import Explosion
 from my_module.Spaceship import Spaceship
+from my_module.Spritesheet import Spritesheet
 from my_module.Wave import Wave
 from my_module import config
 from my_module import assets
@@ -109,7 +110,7 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
 
     for pusher in pushers:
         if pusher.is_out_of_bounds():
-            space.remove(pusher.body, pusher.shape)
+            space.remove(pusher.body, pusher)
             pushers.remove(pusher)
 
     for item in items:
@@ -154,8 +155,17 @@ def main():
     h2.data['explosions'] = explosions
     h2.post_solve = spaceship_hit
 
-    backgrounds.append(Background(assets.images['space'], -1, base_layer=True))
-    backgrounds.append(Background(assets.images['stars'], -2))
+    background_sprites = Spritesheet(assets.sprites['backgrounds'])
+    base_layer = pygame.transform.scale(background_sprites.get_sprite(
+        0, 1, 128, 256), (config.screen_width, config.screen_height))
+    bg_layer_1 = pygame.transform.scale(background_sprites.get_sprite(
+        1, 1, 128, 256), (config.screen_width, config.screen_height))
+    bg_layer_2 = pygame.transform.scale(background_sprites.get_sprite(
+        2, 1, 128, 256), (config.screen_width, config.screen_height))
+
+    backgrounds.append(Background(base_layer, 0, base_layer=True))
+    backgrounds.append(Background(bg_layer_1, 2))
+    backgrounds.append(Background(bg_layer_2, 1))
     yellow = Spaceship((100, 300))
     space.add(yellow.body, yellow)
     spaceships.append(yellow)
@@ -175,7 +185,7 @@ def main():
 
         if wave_countdown == 0:
             wave_countdown = wave_interval
-            wave = Wave(2, 10, [20, 30, 40], 2000000)
+            wave = Wave(16, 1, [8], 2000000)
             waves.append(wave)
             for asteroid in wave.asteroids:
                 asteroids.append(asteroid)
@@ -192,13 +202,12 @@ def main():
                 for spaceship in spaceships:
                     if event.key == config.keys['shoot'] and len(bullets) < spaceship.max_bullets:
                         bullet = spaceship.shoot()
-                        # bullet = Bullet((spaceship.x+spaceship.width, spaceship.y +
-                        #                  spaceship.height//2 - 2), (20, 5), 5)
-                        space.add(bullet.body, bullet)
-                        bullets.append(bullet)
-                        spaceship.bullets.append(bullet)
-                        bullet.body.apply_impulse_at_local_point(
-                            (2000, 0), (0, 0))
+                        for bullet in spaceship.shoot():
+                            space.add(bullet.body, bullet)
+                            bullets.append(bullet)
+                            spaceship.bullets.append(bullet)
+                            bullet.body.apply_impulse_at_local_point(
+                                (0, -20), (0, 0))
 
             if event.type == YELLOW_HIT:
                 yellow.invincible = 15
