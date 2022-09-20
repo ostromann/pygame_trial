@@ -27,6 +27,9 @@ class Spaceship(pymunk.Poly):
         self.friction = 0.4
         self.color = (255, 255, 0, 100)
         self.collision_type = config.collision_types['spaceship']
+
+        self.filter = pymunk.ShapeFilter(
+            categories=config.object_categories['player'], mask=config.category_masks['player'])
         self.image = pygame.transform.scale(
             assets.images['spaceship'], self.size)
 

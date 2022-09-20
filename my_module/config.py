@@ -8,6 +8,20 @@ collision_types = {
     "item": 4,
 }
 
+object_categories = {
+    "player":           0b0001,
+    "player_bullet":    0b0010,
+    "asteroid":         0b0100,
+    "item":             0b1000,
+}
+
+category_masks = {
+    "player":           0b1100,
+    "player_bullet":    0b1100,
+    "asteroid":         0b1111,
+    "item":             0b1101
+}
+
 fps = 30
 dt = 1/fps
 scale = 2

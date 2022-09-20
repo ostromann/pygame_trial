@@ -23,6 +23,8 @@ class Bullet(pymunk.Poly):
         self.friction = 0.4
         self.color = (255, 0, 0, 100)
         self.collision_type = config.collision_types['bullet']
+        self.filter = pymunk.ShapeFilter(
+            categories=config.object_categories['player_bullet'], mask=config.category_masks['player_bullet'])
         self.image = pygame.transform.scale(
             assets.images['bullet'], size)
         assets.sounds['bullet_fire'].play()

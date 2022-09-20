@@ -4,9 +4,12 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 
+import numpy as np
+
 from my_module.Background import Background
 from my_module.Bullet import Bullet
 from my_module.Explosion import Explosion
+from my_module.Item import Item
 from my_module.Spaceship import Spaceship
 from my_module.Spritesheet import Spritesheet
 from my_module.Wave import Wave
@@ -48,15 +51,33 @@ def spaceship_hit(arbiter, space, data):
     pygame.event.post(pygame.event.Event(YELLOW_HIT))
 
 
+def collect_heart(arbiter, space, data):
+    a = arbiter.shapes[0]  # Spaceship
+    b = arbiter.shapes[1]  # Heart
+
+    # Remove Heart
+    space.remove(b, b.body)
+    try:
+        data['items'].remove(b)
+    except ValueError:
+        pass
+
+    print(data['spaceships'])
+    data['spaceships'][0].health += 1
+
+
 def remove_asteroid_and_bullet(arbiter, space, data):
     a = arbiter.shapes[0]  # Asteroid
     b = arbiter.shapes[1]  # Bullet
 
-    print(a)
     # Spawn explosion
-    print(
-        f'create explosion at: {a._get_body().position} with size {a.radius} x {a.radius}')
-    data['explosions'].append(Explosion(a._get_body().position, a.radius))
+    data['explosions'].append(Explosion(a._get_body().position, a.radius*2))
+
+    # Spawn item
+    if np.random.uniform(0, 1) < a.drop_rate:
+        item = Item(a._get_body().position, a.radius, 5)
+        data['items'].append(item)
+        space.add(item.body, item)
 
     # Remove asteroid
     space.remove(a, a.body)
@@ -97,10 +118,6 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
         else:
             bullet.draw(WIN)
 
-    for explosion in explosions:
-        if not explosion.draw(WIN):
-            explosions.remove(explosion)
-
     for asteroid in asteroids:
         if asteroid.is_out_of_bounds():
             space.remove(asteroid.body, asteroid)
@@ -115,6 +132,10 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
 
     for item in items:
         item.draw(WIN)
+
+    for explosion in explosions:
+        if not explosion.draw(WIN):
+            explosions.remove(explosion)
 
 
 def draw_winner(text):
@@ -146,6 +167,7 @@ def main():
     h.data['asteroids'] = asteroids
     h.data['bullets'] = bullets
     h.data['explosions'] = explosions
+    h.data['items'] = items
     h.post_solve = remove_asteroid_and_bullet
 
     # Collision
@@ -154,6 +176,13 @@ def main():
     h2.data['asteroids'] = asteroids
     h2.data['explosions'] = explosions
     h2.post_solve = spaceship_hit
+
+    # Collecting items
+    h3 = space.add_collision_handler(
+        config.collision_types["spaceship"], config.collision_types["item"])
+    h3.data['spaceships'] = spaceships
+    h3.data['items'] = items
+    h3.post_solve = collect_heart
 
     background_sprites = Spritesheet(assets.sprites['backgrounds'])
     base_layer = pygame.transform.scale(background_sprites.get_sprite(
