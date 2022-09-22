@@ -75,7 +75,7 @@ def remove_asteroid_and_bullet(arbiter, space, data):
 
     # Spawn item
     if np.random.uniform(0, 1) < a.drop_rate:
-        item = Item(a._get_body().position, a.radius, 5)
+        item = Item(a._get_body().position, 8, 5)
         data['items'].append(item)
         space.add(item.body, item)
 
@@ -147,6 +147,9 @@ def draw_winner(text):
 
 
 def main():
+    # Start music
+    # assets.music['asteroid_dance'].play(-1)
+
     backgrounds = []
     spaceships = []
     bullets = []
@@ -214,7 +217,7 @@ def main():
 
         if wave_countdown == 0:
             wave_countdown = wave_interval
-            wave = Wave(16, 1, [8], 2000000)
+            wave = Wave(16, 1, [8, 16], 2000000)
             waves.append(wave)
             for asteroid in wave.asteroids:
                 asteroids.append(asteroid)

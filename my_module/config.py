@@ -24,11 +24,11 @@ category_masks = {
 
 fps = 30
 dt = 1/fps
-scale = 2
+scale = 4
 # 256, 512  # 128, 256  # 900, 500  # 1400, 700
 screen_width, screen_height = 128 * scale, 256 * scale
 
-spaceship_size = (16, 16)
+spaceship_size = (8*scale, 8*scale)
 spaceship_mass = 10
 asteroid_density = 0.0015
 explosion_timeout = 4*4

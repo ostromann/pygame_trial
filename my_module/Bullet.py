@@ -39,8 +39,8 @@ class Bullet(pymunk.Poly):
 
     def is_out_of_bounds(self):
         x, y = self._get_body().position
-        if x < 0 or x > 1200:
+        if x < 0 or x > config.screen_width:
             return True
-        if y < -50 or y > 500:
+        if y < 0 or y > config.screen_height:
             return True
         return False
