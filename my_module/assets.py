@@ -9,6 +9,13 @@ sounds = {
     'explosion': pygame.mixer.Sound(os.path.join('Assets', 'Grenade+1.mp3')),
 }
 
+sounds['bullet_fire'].set_volume(0.2)
+sounds['explosion'].set_volume(0.2)
+
+music = {
+    'asteroid_dance': pygame.mixer.Sound(os.path.join('Assets', 'asteroid_dance.wav'))
+}
+
 images = {
     'space': pygame.image.load(os.path.join('Assets', 'space.png')),
     'stars': pygame.image.load(os.path.join('Assets', 'stars.png')),
