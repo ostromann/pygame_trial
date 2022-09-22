@@ -144,7 +144,6 @@ class Spaceship(pymunk.Poly):
                         (+3*config.scale, -5*config.scale - 5*config.scale)]
         for weapon in self.weapons:
             x, y = self._get_body().position + weapon
-            print('Spaceship:', self._get_body().position, 'Bullet:', x, y)
             bullets.append(
                 Bullet((x, y), (1*config.scale, 10*config.scale), 5))
         return bullets

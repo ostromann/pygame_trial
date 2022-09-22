@@ -41,7 +41,6 @@ class Wave():
                 y += 32
                 grid_size = np.max(self.asteroid_radii)*2
                 spawn_point = (x + j * grid_size, y + i * grid_size)
-                print(spawn_point)
                 radius = np.random.choice(self.asteroid_radii)
                 mass = 4/3 * math.pi * radius**3 * config.asteroid_density
                 self.asteroids.append(

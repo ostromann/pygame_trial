@@ -37,8 +37,6 @@ def spaceship_hit(arbiter, space, data):
     b = arbiter.shapes[1]  # Ship
 
     # Spawn explosion
-    print(
-        f'create explosion at: {a._get_body().position} with size {a.radius} x {a.radius}')
     data['explosions'].append(Explosion(a._get_body().position, a.radius))
 
     # Remove asteroid
@@ -62,7 +60,6 @@ def collect_heart(arbiter, space, data):
     except ValueError:
         pass
 
-    print(data['spaceships'])
     data['spaceships'][0].health += 1
 
 
