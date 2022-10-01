@@ -4,16 +4,20 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 
+import numpy as np
+
 from my_module.Background import Background
 from my_module.Bullet import Bullet
 from my_module.Explosion import Explosion
+from my_module.Item import Item
 from my_module.Spaceship import Spaceship
+from my_module.Spritesheet import Spritesheet
 from my_module.Wave import Wave
 from my_module import config
 from my_module import assets
 
 pygame.font.init()
-WIN = pygame.display.set_mode((config.screen_width, config.screen_height))
+WIN = pygame.display.set_mode((config.display_w, config.display_h))
 pygame.display.set_caption("Asteroid Impact")
 
 WHITE = (255, 255, 255)
@@ -33,8 +37,6 @@ def spaceship_hit(arbiter, space, data):
     b = arbiter.shapes[1]  # Ship
 
     # Spawn explosion
-    print(
-        f'create explosion at: {a._get_body().position} with size {a.radius} x {a.radius}')
     data['explosions'].append(Explosion(a._get_body().position, a.radius))
 
     # Remove asteroid
@@ -47,15 +49,33 @@ def spaceship_hit(arbiter, space, data):
     pygame.event.post(pygame.event.Event(YELLOW_HIT))
 
 
+def collect_heart(arbiter, space, data):
+    a = arbiter.shapes[0]  # Spaceship
+    b = arbiter.shapes[1]  # Heart
+
+    # Remove Heart
+    space.remove(b, b.body)
+    try:
+        data['items'].remove(b)
+    except ValueError:
+        pass
+
+    if data['spaceships'][0].health < data['spaceships'][0].max_health:
+        data['spaceships'][0].health += 1
+
+
 def remove_asteroid_and_bullet(arbiter, space, data):
     a = arbiter.shapes[0]  # Asteroid
     b = arbiter.shapes[1]  # Bullet
 
-    print(a)
     # Spawn explosion
-    print(
-        f'create explosion at: {a._get_body().position} with size {a.radius} x {a.radius}')
-    data['explosions'].append(Explosion(a._get_body().position, a.radius))
+    data['explosions'].append(Explosion(a._get_body().position, a.radius*2))
+
+    # Spawn item
+    if np.random.uniform(0, 1) < a.drop_rate:
+        item = Item(a._get_body().position, 8, 5)
+        data['items'].append(item)
+        space.add(item.body, item)
 
     # Remove asteroid
     space.remove(a, a.body)
@@ -71,60 +91,83 @@ def remove_asteroid_and_bullet(arbiter, space, data):
         pass
 
 
-class Ammo(pygame.Rect):
-    def __init__(self, x=config.screen_width, y=0, width=30, height=30):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
+def draw_window(left_panel, right_panel, main_panel, space, draw_options, backgrounds, spaceships, bullets, explosions, asteroids, items, pushers):
+    # Remove each item that is out of bounds
 
-    def draw(self, win):
-        pygame.draw.rect(win, (255, 0, 0), self)
+    # Draw all other items (have a z-order for items?)
 
+    # Have a main window + stuff left and right
+    left_panel.fill((0, 0, 255))
+    right_panel.fill((255, 0, 0))
 
-def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosions, asteroids, items, pushers):
     for background in backgrounds:
-        background.draw(WIN)
+        background.draw(main_panel)
 
     for spaceship in spaceships:
-        spaceship.draw(WIN, bullets)
+        spaceship.draw(main_panel, bullets)
+
+        # TODO: Move to new class
+        sprite_sheet = Spritesheet(assets.sprites['miscellaneous'])
+        heart = pygame.transform.scale(sprite_sheet.get_sprite(
+            2, 0, 8, 8), (8*4, 8*4))
+        # TODO: Instead have empty hearts
+        # TODO: don't collect more than max hearts
+        heart2 = pygame.transform.scale(sprite_sheet.get_sprite(
+            3, 0, 8, 8), (8*4, 8*4))
+
+        for pos, slot in enumerate(range(spaceship.max_health)):
+            left_panel.blit(heart2, (8 + 36*pos, config.display_h - 40))
+        for pos, slot in enumerate(range(spaceship.health)):
+            left_panel.blit(heart, (8 + 36*pos, config.display_h - 40))
 
     for bullet in bullets:
         if bullet.is_out_of_bounds():
             space.remove(bullet.body, bullet)
             bullets.remove(bullet)
         else:
-            bullet.draw(WIN)
-
-    for explosion in explosions:
-        if not explosion.draw(WIN):
-            explosions.remove(explosion)
+            bullet.draw(main_panel)
 
     for asteroid in asteroids:
         if asteroid.is_out_of_bounds():
             space.remove(asteroid.body, asteroid)
             asteroids.remove(asteroid)
         else:
-            asteroid.draw(WIN)
+            asteroid.draw(main_panel)
 
     for pusher in pushers:
         if pusher.is_out_of_bounds():
-            space.remove(pusher.body, pusher.shape)
+            space.remove(pusher.body, pusher)
             pushers.remove(pusher)
 
     for item in items:
-        item.draw(WIN)
+        item.draw(main_panel)
+
+    for explosion in explosions:
+        if not explosion.draw(main_panel):
+            explosions.remove(explosion)
+
+    WIN.fill((255, 255, 255))
+    WIN.blit(left_panel, (0, 0))
+    WIN.blit(main_panel, (config.display_w/4, 0))
+    WIN.blit(right_panel, (config.display_w/4*3, 0))
 
 
 def draw_winner(text):
     draw_text = WINNER_FONT.render(text, 1, WHITE)
-    WIN.blit(draw_text, (config.screen_width//2 - draw_text.get_width() //
-             2, config.screen_height//2 - draw_text.get_height()//2))
+    WIN.blit(draw_text, (config.display_w//2 - draw_text.get_width() //
+             2, config.display_h//2 - draw_text.get_height()//2))
     pygame.display.update()
     pygame.time.delay(5000)
 
 
 def main():
+    # Start music
+    # assets.music['asteroid_dance'].play(-1)
+
+    left_panel = pygame.Surface((config.display_w//4, config.display_h))
+    right_panel = pygame.Surface((config.display_w//4, config.display_h))
+    main_panel = pygame.Surface((config.display_w/2, config.display_h))
+
     backgrounds = []
     spaceships = []
     bullets = []
@@ -145,6 +188,7 @@ def main():
     h.data['asteroids'] = asteroids
     h.data['bullets'] = bullets
     h.data['explosions'] = explosions
+    h.data['items'] = items
     h.post_solve = remove_asteroid_and_bullet
 
     # Collision
@@ -154,8 +198,24 @@ def main():
     h2.data['explosions'] = explosions
     h2.post_solve = spaceship_hit
 
-    backgrounds.append(Background(assets.images['space'], -1, base_layer=True))
-    backgrounds.append(Background(assets.images['stars'], -2))
+    # Collecting items
+    h3 = space.add_collision_handler(
+        config.collision_types["spaceship"], config.collision_types["item"])
+    h3.data['spaceships'] = spaceships
+    h3.data['items'] = items
+    h3.post_solve = collect_heart
+
+    background_sprites = Spritesheet(assets.sprites['backgrounds'])
+    base_layer = pygame.transform.scale(background_sprites.get_sprite(
+        0, 1, 128, 256), (config.main_w*2, config.main_h*2))
+    bg_layer_1 = pygame.transform.scale(background_sprites.get_sprite(
+        1, 1, 128, 256), (config.main_w*2, config.main_h*2))
+    bg_layer_2 = pygame.transform.scale(background_sprites.get_sprite(
+        2, 1, 128, 256), (config.main_w*2, config.main_h*2))
+
+    backgrounds.append(Background(base_layer, 0, base_layer=True))
+    backgrounds.append(Background(bg_layer_1, 2))
+    backgrounds.append(Background(bg_layer_2, 1))
     yellow = Spaceship((100, 300))
     space.add(yellow.body, yellow)
     spaceships.append(yellow)
@@ -175,7 +235,7 @@ def main():
 
         if wave_countdown == 0:
             wave_countdown = wave_interval
-            wave = Wave(2, 10, [20, 30, 40], 2000000)
+            wave = Wave(16, 1, [8, 16], 2000000)
             waves.append(wave)
             for asteroid in wave.asteroids:
                 asteroids.append(asteroid)
@@ -192,13 +252,12 @@ def main():
                 for spaceship in spaceships:
                     if event.key == config.keys['shoot'] and len(bullets) < spaceship.max_bullets:
                         bullet = spaceship.shoot()
-                        # bullet = Bullet((spaceship.x+spaceship.width, spaceship.y +
-                        #                  spaceship.height//2 - 2), (20, 5), 5)
-                        space.add(bullet.body, bullet)
-                        bullets.append(bullet)
-                        spaceship.bullets.append(bullet)
-                        bullet.body.apply_impulse_at_local_point(
-                            (2000, 0), (0, 0))
+                        for bullet in spaceship.shoot():
+                            space.add(bullet.body, bullet)
+                            bullets.append(bullet)
+                            spaceship.bullets.append(bullet)
+                            bullet.body.apply_impulse_at_local_point(
+                                (0, -1000), (0, 0))
 
             if event.type == YELLOW_HIT:
                 yellow.invincible = 15
@@ -209,15 +268,15 @@ def main():
             winner_text = "Game over!"
 
         if winner_text != "":
-            draw_window(space, draw_options,  backgrounds, spaceships, bullets,
+            draw_window(left_panel, right_panel, main_panel, space, draw_options,  backgrounds, spaceships, bullets,
                         explosions, asteroids, items, pushers)
             draw_winner(winner_text)
             break
 
         keys_pressed = pygame.key.get_pressed()
-        yellow.handle_movement(keys_pressed, WIN)
+        yellow.handle_movement(keys_pressed, main_panel)
 
-        draw_window(space, draw_options,  backgrounds, spaceships, bullets,
+        draw_window(left_panel, right_panel, main_panel, space, draw_options,  backgrounds, spaceships, bullets,
                     explosions, asteroids, items, pushers)
 
         # space.debug_draw(draw_options)

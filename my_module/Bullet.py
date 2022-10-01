@@ -23,6 +23,8 @@ class Bullet(pymunk.Poly):
         self.friction = 0.4
         self.color = (255, 0, 0, 100)
         self.collision_type = config.collision_types['bullet']
+        self.filter = pymunk.ShapeFilter(
+            categories=config.object_categories['player_bullet'], mask=config.category_masks['player_bullet'])
         self.image = pygame.transform.scale(
             assets.images['bullet'], size)
         assets.sounds['bullet_fire'].play()
@@ -37,8 +39,8 @@ class Bullet(pymunk.Poly):
 
     def is_out_of_bounds(self):
         x, y = self._get_body().position
-        if x < 0 or x > 1200:
+        if x < 0 or x > config.display_w:
             return True
-        if y < -50 or y > 500:
+        if y < 0 or y > config.display_h:
             return True
         return False

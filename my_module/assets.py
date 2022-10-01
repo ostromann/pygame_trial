@@ -9,6 +9,13 @@ sounds = {
     'explosion': pygame.mixer.Sound(os.path.join('Assets', 'Grenade+1.mp3')),
 }
 
+sounds['bullet_fire'].set_volume(0.2)
+sounds['explosion'].set_volume(0.2)
+
+music = {
+    'asteroid_dance': pygame.mixer.Sound(os.path.join('Assets', 'asteroid_dance.wav'))
+}
+
 images = {
     'space': pygame.image.load(os.path.join('Assets', 'space.png')),
     'stars': pygame.image.load(os.path.join('Assets', 'stars.png')),
@@ -17,4 +24,13 @@ images = {
     'spaceship': pygame.image.load(os.path.join('Assets', 'spaceship.png')),
     'bullet': pygame.image.load(os.path.join('Assets', 'bullet.png')),
     'shield': pygame.image.load(os.path.join('Assets', 'shield.png')),
+}
+
+sprites = {
+    'spaceship': os.path.join('Assets', 'spaceship_sprites.png'),
+    'miscellaneous': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Miscellaneous.png'),
+    'spaceships': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Ships.png'),
+    'backgrounds': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Backgrounds.png'),
+    'ui': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_UI.png'),
+    'projectile': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Projectile.png'),
 }

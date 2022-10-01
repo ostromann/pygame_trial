@@ -8,4 +8,4 @@ def blitRotate2(surf, image, topleft, angle):
         center=image.get_rect(topleft=topleft).center)
 
     surf.blit(rotated_image, new_rect.topleft)
-    pygame.draw.rect(surf, (255, 0, 0), new_rect, 2)
+    # pygame.draw.rect(surf, (255, 0, 0), new_rect, 2)
