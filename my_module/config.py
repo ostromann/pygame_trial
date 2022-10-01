@@ -6,6 +6,7 @@ collision_types = {
     "asteroid": 2,
     "spaceship": 3,
     "item": 4,
+    "shield": 5
 }
 
 object_categories = {
@@ -22,12 +23,15 @@ category_masks = {
     "item":             0b1101
 }
 
-fps = 30
+fps = 60
 dt = 1/fps
-scale = 2
+scale = 1
 # 256, 128 # 512, 256  # 1400, 700
 
-display_w, display_h = 512 * scale, 256 * scale
+pixel_scale = 2
+sub_pixel_scale = 1
+
+display_w, display_h = 1024 * scale, 512 * scale
 main_w, main_h = display_w / 4, display_h
 left_w, left_h = display_w / 2, display_h
 right_w, right_h = display_w / 4, display_h

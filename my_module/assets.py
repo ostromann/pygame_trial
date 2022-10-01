@@ -17,6 +17,7 @@ music = {
 }
 
 images = {
+    'endless_space': pygame.image.load(os.path.join('Assets', 'endless_space.png')),
     'space': pygame.image.load(os.path.join('Assets', 'space.png')),
     'stars': pygame.image.load(os.path.join('Assets', 'stars.png')),
     'explosion': pygame.image.load(os.path.join('Assets', 'explosion.png')),
@@ -24,6 +25,8 @@ images = {
     'spaceship': pygame.image.load(os.path.join('Assets', 'spaceship.png')),
     'bullet': pygame.image.load(os.path.join('Assets', 'bullet.png')),
     'shield': pygame.image.load(os.path.join('Assets', 'shield.png')),
+    'ext_shield': pygame.image.load(os.path.join('Assets', 'ext_shield.png')),
+    'mask': pygame.image.load(os.path.join('Assets', 'mask.png')),
 }
 
 sprites = {
@@ -33,4 +36,5 @@ sprites = {
     'backgrounds': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Backgrounds.png'),
     'ui': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_UI.png'),
     'projectile': os.path.join('Assets', 'SpaceShooterAssets', 'SpaceShooterAssetPack_Projectile.png'),
+    'shield': os.path.join('Assets', 'shield_sprite.png'),
 }

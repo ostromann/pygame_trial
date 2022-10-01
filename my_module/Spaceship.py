@@ -34,7 +34,7 @@ class Spaceship(pymunk.Poly):
             assets.images['spaceship'], self.size)
 
         self.acc_direction = np.array([0.0, 0.0])
-        self.vel = np.array([0.0, 0.0])
+        self.vel = np.array([0.0, 5.0])
         self.max_vel = 800  # px/frame
         self.acc = 50  # px/frame^2
         self.friction = 0.9  # px/frame^2
@@ -77,10 +77,10 @@ class Spaceship(pymunk.Poly):
         if keys_pressed[config.keys['down']]:
             self.acc_direction[1] += 1.0
 
-        # if no key pressed, apply friction
-        if self.acc_direction[0] == 0.0 and self.acc_direction[1] == 0.0:
-            self.vel = np.array([0.0, 0.0]) if np.linalg.norm(
-                self.vel) < 0.01 else self.vel * self.friction
+        # # if no key pressed, apply friction
+        # if self.acc_direction[0] == 0.0 and self.acc_direction[1] == 0.0:
+        #     self.vel = np.array([0.0, 0.0]) if np.linalg.norm(
+        #         self.vel) < 0.01 else self.vel * self.friction
 
         # apply acceleration
         else:
@@ -131,6 +131,7 @@ class Spaceship(pymunk.Poly):
 
         if boundary_collision:
             self.body.position = (x, y)
+        print(self.body.velocity)
 
     def shoot(self):
         x, y = self._get_body().position

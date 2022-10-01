@@ -1,3 +1,4 @@
+from email.mime import base
 import sys
 import os
 import pygame
@@ -20,14 +21,6 @@ pygame.font.init()
 WIN = pygame.display.set_mode((config.display_w, config.display_h))
 pygame.display.set_caption("Asteroid Impact")
 
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-
-WINNER_FONT = pygame.font.SysFont('impact', 100)
-
-# SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 40, 55
 
 YELLOW_HIT = pygame.USEREVENT + 1
 
@@ -206,16 +199,19 @@ def main():
     h3.post_solve = collect_heart
 
     background_sprites = Spritesheet(assets.sprites['backgrounds'])
-    base_layer = pygame.transform.scale(background_sprites.get_sprite(
-        0, 1, 128, 256), (config.main_w*2, config.main_h*2))
-    bg_layer_1 = pygame.transform.scale(background_sprites.get_sprite(
-        1, 1, 128, 256), (config.main_w*2, config.main_h*2))
-    bg_layer_2 = pygame.transform.scale(background_sprites.get_sprite(
-        2, 1, 128, 256), (config.main_w*2, config.main_h*2))
+    # base_layer = pygame.transform.scale(background_sprites.get_sprite(
+    #     0, 1, 128, 256), (config.main_w*2, config.main_h*2))
+    # bg_layer_1 = pygame.transform.scale(background_sprites.get_sprite(
+    #     1, 1, 128, 256), (config.main_w*2, config.main_h*2))
+    # bg_layer_2 = pygame.transform.scale(background_sprites.get_sprite(
+    #     2, 1, 128, 256), (config.main_w*2, config.main_h*2))
 
-    backgrounds.append(Background(base_layer, 0, base_layer=True))
-    backgrounds.append(Background(bg_layer_1, 2))
-    backgrounds.append(Background(bg_layer_2, 1))
+    backgrounds.append(Background(
+        assets.images['endless_space'], 0, base_layer=True))
+
+    # backgrounds.append(Background(base_layer, 0, base_layer=True))
+    # backgrounds.append(Background(bg_layer_1, 2))
+    # backgrounds.append(Background(bg_layer_2, 1))
     yellow = Spaceship((100, 300))
     space.add(yellow.body, yellow)
     spaceships.append(yellow)
@@ -231,16 +227,16 @@ def main():
         space.step(config.dt)
         clock.tick(config.fps)
 
-        wave_countdown -= 1
+        # wave_countdown -= 1
 
-        if wave_countdown == 0:
-            wave_countdown = wave_interval
-            wave = Wave(16, 1, [8, 16], 2000000)
-            waves.append(wave)
-            for asteroid in wave.asteroids:
-                asteroids.append(asteroid)
-            pushers.append(wave.pusher)
-            wave.launch(space)
+        # if wave_countdown == 0:
+        #     wave_countdown = wave_interval
+        #     wave = Wave(16, 1, [8, 16], 2000000)
+        #     waves.append(wave)
+        #     for asteroid in wave.asteroids:
+        #         asteroids.append(asteroid)
+        #     pushers.append(wave.pusher)
+        #     wave.launch(space)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
