@@ -1,0 +1,63 @@
+from turtle import left
+import pygame
+displayw, displayh = 512, 256
+window = pygame.display.set_mode((displayw, displayh))
+
+# Clock
+windowclock = pygame.time.Clock()
+
+# Load other things such as images and sound files here
+# Use convert_alpha() for images with transparency
+image = pygame.image.load("Assets/space.png").convert
+
+# Main Class
+
+
+class MainRun(object):
+    def __init__(self, displayw, displayh):
+        self.dw = displayw
+        self.dh = displayh
+        self.Main()
+
+    def Main(self):
+        # Put all variables up here
+        stopped = False
+
+        while stopped == False:
+            # Tuple for filling display... Current is white
+            left_panel = pygame.Surface((displayw//4, displayh))
+            left_panel.fill((0, 0, 255))
+            right_panel = pygame.Surface((displayw//4, displayh))
+            right_panel.fill((255, 0, 0))
+            window.fill((255, 255, 255))
+            window.blit(left_panel, (0, 0))
+            window.blit(right_panel, (displayw/4*3, 0))
+
+            # Event Tasking
+            # Add all your event tasking things here
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                elif event.type == pygame.KEYDOWN:
+                    stopped = True
+
+            # Add things like player updates here
+            # Also things like score updates or drawing additional items
+            # Remember things on top get done first so they will update in the order yours is set at
+
+            # Remember to update your clock and display at the end
+            pygame.display.update()
+            windowclock.tick(60)
+
+        # If you need to reset variables here
+        # This includes things like score resets
+
+    # After your main loop throw in extra things such as a main menu or a pause menu
+    # Make sure you throw them in your main loop somewhere where they can be activated by the user
+
+
+# All player classes and object classes should be made outside of the main class and called inside the class
+# The end of your code should look something like this
+if __name__ == "__main__":
+    MainRun(displayw, displayh)
