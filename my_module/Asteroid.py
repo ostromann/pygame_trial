@@ -39,6 +39,6 @@ class Asteroid(pymunk.Circle):
         x, y = self._get_body().position
         if x < -20:
             return True
-        if y < -50 or y > config.screen_height + 50:
+        if y < -50 or y > config.display_h + 50:
             return True
         return False

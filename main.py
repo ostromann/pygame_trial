@@ -17,7 +17,7 @@ from my_module import config
 from my_module import assets
 
 pygame.font.init()
-WIN = pygame.display.set_mode((config.screen_width, config.screen_height))
+WIN = pygame.display.set_mode((config.display_w, config.display_h))
 pygame.display.set_caption("Asteroid Impact")
 
 WHITE = (255, 255, 255)
@@ -60,7 +60,8 @@ def collect_heart(arbiter, space, data):
     except ValueError:
         pass
 
-    data['spaceships'][0].health += 1
+    if data['spaceships'][0].health < data['spaceships'][0].max_health:
+        data['spaceships'][0].health += 1
 
 
 def remove_asteroid_and_bullet(arbiter, space, data):
@@ -90,37 +91,48 @@ def remove_asteroid_and_bullet(arbiter, space, data):
         pass
 
 
-class Ammo(pygame.Rect):
-    def __init__(self, x=config.screen_width, y=0, width=30, height=30):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
+def draw_window(left_panel, right_panel, main_panel, space, draw_options, backgrounds, spaceships, bullets, explosions, asteroids, items, pushers):
+    # Remove each item that is out of bounds
 
-    def draw(self, win):
-        pygame.draw.rect(win, (255, 0, 0), self)
+    # Draw all other items (have a z-order for items?)
 
+    # Have a main window + stuff left and right
+    left_panel.fill((0, 0, 255))
+    right_panel.fill((255, 0, 0))
 
-def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosions, asteroids, items, pushers):
     for background in backgrounds:
-        background.draw(WIN)
+        background.draw(main_panel)
 
     for spaceship in spaceships:
-        spaceship.draw(WIN, bullets)
+        spaceship.draw(main_panel, bullets)
+
+        # TODO: Move to new class
+        sprite_sheet = Spritesheet(assets.sprites['miscellaneous'])
+        heart = pygame.transform.scale(sprite_sheet.get_sprite(
+            2, 0, 8, 8), (8*4, 8*4))
+        # TODO: Instead have empty hearts
+        # TODO: don't collect more than max hearts
+        heart2 = pygame.transform.scale(sprite_sheet.get_sprite(
+            3, 0, 8, 8), (8*4, 8*4))
+
+        for pos, slot in enumerate(range(spaceship.max_health)):
+            left_panel.blit(heart2, (8 + 36*pos, config.display_h - 40))
+        for pos, slot in enumerate(range(spaceship.health)):
+            left_panel.blit(heart, (8 + 36*pos, config.display_h - 40))
 
     for bullet in bullets:
         if bullet.is_out_of_bounds():
             space.remove(bullet.body, bullet)
             bullets.remove(bullet)
         else:
-            bullet.draw(WIN)
+            bullet.draw(main_panel)
 
     for asteroid in asteroids:
         if asteroid.is_out_of_bounds():
             space.remove(asteroid.body, asteroid)
             asteroids.remove(asteroid)
         else:
-            asteroid.draw(WIN)
+            asteroid.draw(main_panel)
 
     for pusher in pushers:
         if pusher.is_out_of_bounds():
@@ -128,17 +140,22 @@ def draw_window(space, draw_options, backgrounds, spaceships,  bullets, explosio
             pushers.remove(pusher)
 
     for item in items:
-        item.draw(WIN)
+        item.draw(main_panel)
 
     for explosion in explosions:
-        if not explosion.draw(WIN):
+        if not explosion.draw(main_panel):
             explosions.remove(explosion)
+
+    WIN.fill((255, 255, 255))
+    WIN.blit(left_panel, (0, 0))
+    WIN.blit(main_panel, (config.display_w/4, 0))
+    WIN.blit(right_panel, (config.display_w/4*3, 0))
 
 
 def draw_winner(text):
     draw_text = WINNER_FONT.render(text, 1, WHITE)
-    WIN.blit(draw_text, (config.screen_width//2 - draw_text.get_width() //
-             2, config.screen_height//2 - draw_text.get_height()//2))
+    WIN.blit(draw_text, (config.display_w//2 - draw_text.get_width() //
+             2, config.display_h//2 - draw_text.get_height()//2))
     pygame.display.update()
     pygame.time.delay(5000)
 
@@ -146,6 +163,10 @@ def draw_winner(text):
 def main():
     # Start music
     # assets.music['asteroid_dance'].play(-1)
+
+    left_panel = pygame.Surface((config.display_w//4, config.display_h))
+    right_panel = pygame.Surface((config.display_w//4, config.display_h))
+    main_panel = pygame.Surface((config.display_w/2, config.display_h))
 
     backgrounds = []
     spaceships = []
@@ -186,11 +207,11 @@ def main():
 
     background_sprites = Spritesheet(assets.sprites['backgrounds'])
     base_layer = pygame.transform.scale(background_sprites.get_sprite(
-        0, 1, 128, 256), (config.screen_width, config.screen_height))
+        0, 1, 128, 256), (config.main_w*2, config.main_h*2))
     bg_layer_1 = pygame.transform.scale(background_sprites.get_sprite(
-        1, 1, 128, 256), (config.screen_width, config.screen_height))
+        1, 1, 128, 256), (config.main_w*2, config.main_h*2))
     bg_layer_2 = pygame.transform.scale(background_sprites.get_sprite(
-        2, 1, 128, 256), (config.screen_width, config.screen_height))
+        2, 1, 128, 256), (config.main_w*2, config.main_h*2))
 
     backgrounds.append(Background(base_layer, 0, base_layer=True))
     backgrounds.append(Background(bg_layer_1, 2))
@@ -247,15 +268,15 @@ def main():
             winner_text = "Game over!"
 
         if winner_text != "":
-            draw_window(space, draw_options,  backgrounds, spaceships, bullets,
+            draw_window(left_panel, right_panel, main_panel, space, draw_options,  backgrounds, spaceships, bullets,
                         explosions, asteroids, items, pushers)
             draw_winner(winner_text)
             break
 
         keys_pressed = pygame.key.get_pressed()
-        yellow.handle_movement(keys_pressed, WIN)
+        yellow.handle_movement(keys_pressed, main_panel)
 
-        draw_window(space, draw_options,  backgrounds, spaceships, bullets,
+        draw_window(left_panel, right_panel, main_panel, space, draw_options,  backgrounds, spaceships, bullets,
                     explosions, asteroids, items, pushers)
 
         # space.debug_draw(draw_options)

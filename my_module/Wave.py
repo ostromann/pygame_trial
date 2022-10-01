@@ -31,8 +31,8 @@ class Wave():
         self.asteroids = []
         self.spawn_asteroids()
         # TODO: perhaps this can be done nicer
-        self.pusher = Pusher((config.screen_width / 2, 0),
-                             (config.screen_width, 20), 20000)
+        self.pusher = Pusher((config.display_w / 2, 0),
+                             (config.display_w, 20), 20000)
 
     def spawn_asteroids(self):
         for i in range(0, self.cols):

@@ -98,7 +98,7 @@ class Spaceship(pymunk.Poly):
             self.vel = v_hat * self.max_vel
 
     def handle_movement(self, keys_pressed, win):
-        pass
+        # pass
         self.handle_acceleration(keys_pressed)
 
         self.body.velocity = (self.vel[0], self.vel[1])
@@ -133,7 +133,6 @@ class Spaceship(pymunk.Poly):
             self.body.position = (x, y)
 
     def shoot(self):
-        angle = math.degrees(-self._get_body().angle)
         x, y = self._get_body().position
         w, h = self.size[0], self.size[1]
         x -= w / 2
